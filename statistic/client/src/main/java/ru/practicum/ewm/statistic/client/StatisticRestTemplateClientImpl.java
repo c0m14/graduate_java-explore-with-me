@@ -20,8 +20,8 @@ import java.util.List;
 
 @Component
 public class StatisticRestTemplateClientImpl implements StatisticClient {
-    private final String HIT_URI_PREFIX = "/hit";
-    private final String STATS_URI_PREFIX = "/stats";
+    private static final String HIT_URI_PREFIX = "/hit";
+    private static final String STATS_URI_PREFIX = "/stats";
     private final RestTemplate restTemplate;
 
     public StatisticRestTemplateClientImpl(@Value("${statistic-service.url}") String serverUrl) {
