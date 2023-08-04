@@ -21,6 +21,10 @@
 		<java.version>11</java.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
+	<modules>
+		<module>main</module>
+		<module>statistic</module>
+	</modules>
 
 	<build>
 		<pluginManagement>
