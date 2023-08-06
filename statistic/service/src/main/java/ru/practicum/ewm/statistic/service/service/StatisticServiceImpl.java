@@ -17,11 +17,10 @@ import java.util.List;
 @Slf4j
 public class StatisticServiceImpl implements StatisticService {
     private final StatisticServiceRepository repository;
-    private final EndpointHitMapper endpointHitMapper;
 
     @Override
     public void saveEndpointHit(EndpointHitDto endpointHitDto) {
-        EndpointHit endpointHit = endpointHitMapper.mapToEntity(endpointHitDto);
+        EndpointHit endpointHit = EndpointHitMapper.mapToEntity(endpointHitDto);
         repository.save(endpointHit);
         log.info("Finish saving for {}", endpointHitDto);
     }
