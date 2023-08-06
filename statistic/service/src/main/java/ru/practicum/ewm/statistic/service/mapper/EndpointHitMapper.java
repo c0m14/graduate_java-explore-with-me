@@ -1,10 +1,10 @@
 package ru.practicum.ewm.statistic.service.mapper;
 
-import org.springframework.stereotype.Component;
+import lombok.experimental.UtilityClass;
 import ru.practicum.ewm.statistic.dto.EndpointHitDto;
 import ru.practicum.ewm.statistic.service.model.EndpointHit;
 
-@Component
+@UtilityClass
 public class EndpointHitMapper {
 
     public EndpointHit mapToEntity(EndpointHitDto dto) {

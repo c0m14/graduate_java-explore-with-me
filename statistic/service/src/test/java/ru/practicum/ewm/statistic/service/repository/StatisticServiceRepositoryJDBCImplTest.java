@@ -4,8 +4,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import ru.practicum.ewm.statistic.dto.Formats;
 import ru.practicum.ewm.statistic.dto.ViewStatsDto;
-import ru.practicum.ewm.statistic.dto.util.constant.Constants;
 import ru.practicum.ewm.statistic.service.model.EndpointHit;
 
 import java.time.LocalDateTime;
@@ -18,7 +18,7 @@ import static org.hamcrest.Matchers.equalTo;
 @SpringBootTest
 class StatisticServiceRepositoryJDBCImplTest {
 
-    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.DATE_TIME_PATTERN);
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Formats.DATE_TIME_PATTERN);
     @Autowired
     private StatisticServiceRepository statisticRepository;
 

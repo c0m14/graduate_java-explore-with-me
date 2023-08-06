@@ -22,7 +22,7 @@ public class StatisticServiceErrorHandler {
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponseList handleConstraintViolationException(ConstraintViolationException e) {
-        log.error(e.getMessage());
+        log.error(e.getMessage(), e);
         return new ErrorResponseList(
                 e.getConstraintViolations().stream()
                         .map(violation -> new ErrorResponse(
@@ -36,7 +36,7 @@ public class StatisticServiceErrorHandler {
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponseList handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
-        log.error(e.getMessage());
+        log.error(e.getMessage(), e);
         return new ErrorResponseList(
                 e.getBindingResult().getFieldErrors().stream()
                         .map(fieldError -> new ErrorResponse(
@@ -50,14 +50,14 @@ public class StatisticServiceErrorHandler {
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleValidationException(ValidationException e) {
-        log.error(e.getMessage());
+        log.error(e.getMessage(), e);
         return new ErrorResponse("Unrecognized param", e.getMessage());
     }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleValidationException(MissingServletRequestParameterException e) {
-        log.error(e.getMessage());
+        log.error(e.getMessage(), e);
         return new ErrorResponse(e.getParameterName(), e.getMessage());
     }
 

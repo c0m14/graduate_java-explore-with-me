@@ -4,9 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -32,7 +30,7 @@ public class StatisticRestTemplateClientImpl implements StatisticClient {
     }
 
     @Override
-    public ResponseEntity<Void> saveEndpointHit(EndpointHitDto endpointHitDto) {
+    public void saveEndpointHit(EndpointHitDto endpointHitDto) {
         RequestEntity<EndpointHitDto> requestEntity = RequestEntity
                 .post(HIT_URI_PREFIX)
                 .body(endpointHitDto);
@@ -41,12 +39,10 @@ public class StatisticRestTemplateClientImpl implements StatisticClient {
                 requestEntity,
                 Void.class
         );
-
-        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @Override
-    public ResponseEntity<List<ViewStatsDto>> getViewStats(
+    public List<ViewStatsDto> getViewStats(
             LocalDateTime start,
             LocalDateTime end,
             List<String> uris,
@@ -64,6 +60,6 @@ public class StatisticRestTemplateClientImpl implements StatisticClient {
                 null,
                 new ParameterizedTypeReference<List<ViewStatsDto>>() {
                 }
-        );
+        ).getBody();
     }
 }

@@ -11,7 +11,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.ewm.statistic.dto.EndpointHitDto;
-import ru.practicum.ewm.statistic.dto.util.constant.Constants;
+import ru.practicum.ewm.statistic.dto.Formats;
 import ru.practicum.ewm.statistic.service.service.StatisticService;
 
 import java.time.LocalDateTime;
@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = StatisticServiceController.class)
 class StatisticServiceControllerTest {
 
-    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.DATE_TIME_PATTERN);
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Formats.DATE_TIME_PATTERN);
     @Autowired
     private MockMvc mvc;
     @Autowired

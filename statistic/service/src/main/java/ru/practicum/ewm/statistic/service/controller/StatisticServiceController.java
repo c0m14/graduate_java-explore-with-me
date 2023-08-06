@@ -8,8 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.ewm.statistic.dto.EndpointHitDto;
+import ru.practicum.ewm.statistic.dto.Formats;
 import ru.practicum.ewm.statistic.dto.ViewStatsDto;
-import ru.practicum.ewm.statistic.dto.util.constant.Constants;
 import ru.practicum.ewm.statistic.service.service.StatisticService;
 
 import javax.validation.Valid;
@@ -35,9 +35,9 @@ public class StatisticServiceController {
     @GetMapping("/stats")
     public List<ViewStatsDto> getViewStats(
             @RequestParam(name = "start", required = true)
-            @DateTimeFormat(pattern = Constants.DATE_TIME_PATTERN) LocalDateTime start,
+            @DateTimeFormat(pattern = Formats.DATE_TIME_PATTERN) LocalDateTime start,
             @RequestParam(name = "end", required = true)
-            @DateTimeFormat(pattern = Constants.DATE_TIME_PATTERN) LocalDateTime end,
+            @DateTimeFormat(pattern = Formats.DATE_TIME_PATTERN) LocalDateTime end,
             @RequestParam(name = "uris", required = false) List<String> uris,
             @RequestParam(name = "unique", required = false, defaultValue = "false") boolean unique
     ) {

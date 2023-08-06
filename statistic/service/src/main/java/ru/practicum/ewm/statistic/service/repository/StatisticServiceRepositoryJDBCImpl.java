@@ -6,8 +6,8 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Component;
+import ru.practicum.ewm.statistic.dto.Formats;
 import ru.practicum.ewm.statistic.dto.ViewStatsDto;
-import ru.practicum.ewm.statistic.dto.util.constant.Constants;
 import ru.practicum.ewm.statistic.service.model.EndpointHit;
 
 import java.sql.ResultSet;
@@ -21,7 +21,7 @@ import java.util.List;
 public class StatisticServiceRepositoryJDBCImpl implements StatisticServiceRepository {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
-    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.DATE_TIME_PATTERN);
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Formats.DATE_TIME_PATTERN);
 
     @Override
     public void save(EndpointHit endpointHit) {

@@ -1,4 +1,4 @@
-package ru.practicum.ewm.statistic.dto.util.validator;
+package ru.practicum.ewm.statistic.dto.validator;
 
 import org.apache.commons.validator.routines.InetAddressValidator;
 

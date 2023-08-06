@@ -5,8 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.practicum.ewm.statistic.dto.util.constant.Constants;
-import ru.practicum.ewm.statistic.dto.util.validator.ValidateIP;
+import ru.practicum.ewm.statistic.dto.validator.ValidateIP;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -30,6 +29,6 @@ public class EndpointHitDto {
 
     @NotNull
     @Past
-    @JsonFormat(pattern = Constants.DATE_TIME_PATTERN)
+    @JsonFormat(pattern = Formats.DATE_TIME_PATTERN)
     private LocalDateTime timestamp;
 }

@@ -10,8 +10,8 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import ru.practicum.ewm.statistic.dto.EndpointHitDto;
+import ru.practicum.ewm.statistic.dto.Formats;
 import ru.practicum.ewm.statistic.dto.ViewStatsDto;
-import ru.practicum.ewm.statistic.dto.util.constant.Constants;
 import ru.practicum.ewm.statistic.service.model.EndpointHit;
 import ru.practicum.ewm.statistic.service.repository.StatisticServiceRepository;
 
@@ -29,7 +29,7 @@ import static org.hamcrest.Matchers.equalTo;
 class StatisticServiceIntegrationTests {
 
     private static final String HOST = "http://localhost:";
-    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.DATE_TIME_PATTERN);
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Formats.DATE_TIME_PATTERN);
     @Autowired
     private TestRestTemplate testRestTemplate;
     @Autowired
@@ -59,7 +59,6 @@ class StatisticServiceIntegrationTests {
         testRestTemplate.postForEntity(hitUrl, endpointHitDto, Void.class);
 
         EndpointHit savedHit = statisticRepository.findAll().get(0);
-
         assertThat(savedHit.getApp(), equalTo(endpointHitDto.getApp()));
         assertThat(savedHit.getUri(), equalTo(endpointHitDto.getUri()));
         assertThat(savedHit.getIp(), equalTo(endpointHitDto.getIp()));
