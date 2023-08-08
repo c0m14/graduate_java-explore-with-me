@@ -4,10 +4,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import ru.practicum.ewm.statistic.dto.EndpointHitDto;
 import ru.practicum.ewm.statistic.dto.Formats;
@@ -16,6 +20,8 @@ import ru.practicum.ewm.statistic.service.model.EndpointHit;
 import ru.practicum.ewm.statistic.service.repository.StatisticServiceRepository;
 
 import java.net.URI;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -34,6 +40,8 @@ class StatisticServiceIntegrationTests {
     private TestRestTemplate testRestTemplate;
     @Autowired
     private StatisticServiceRepository statisticRepository;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
     @Value(value = "${local.server.port}")
     private int port;
     private URI hitUrl;
@@ -41,7 +49,7 @@ class StatisticServiceIntegrationTests {
 
     @BeforeEach
     public void beforeEach() {
-        statisticRepository.deleteAll();
+        jdbcTemplate.update("DELETE FROM endpoint_hit");
         hitUrl = URI.create(HOST + port + "/hit");
         startURL = URI.create(HOST + port + "/stats");
     }
@@ -58,7 +66,7 @@ class StatisticServiceIntegrationTests {
 
         testRestTemplate.postForEntity(hitUrl, endpointHitDto, Void.class);
 
-        EndpointHit savedHit = statisticRepository.findAll().get(0);
+        EndpointHit savedHit = jdbcTemplate.query("SELECT * FROM endpoint_hit", this::mapRowToEndpointHit).get(0);
         assertThat(savedHit.getApp(), equalTo(endpointHitDto.getApp()));
         assertThat(savedHit.getUri(), equalTo(endpointHitDto.getUri()));
         assertThat(savedHit.getIp(), equalTo(endpointHitDto.getIp()));
@@ -136,6 +144,16 @@ class StatisticServiceIntegrationTests {
                 .uri(uri)
                 .ip("1.1.1.1")
                 .timestamp(timestamp)
+                .build();
+    }
+
+    private EndpointHit mapRowToEndpointHit(ResultSet resultSet, int rowNum) throws SQLException {
+        return EndpointHit.builder()
+                .id(resultSet.getLong("hit_id"))
+                .app(resultSet.getString("app_name"))
+                .uri(resultSet.getString("app_uri"))
+                .ip(resultSet.getString("ip"))
+                .timestamp(LocalDateTime.parse(resultSet.getString("timestamp"), formatter))
                 .build();
     }
 }
