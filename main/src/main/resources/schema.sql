@@ -24,7 +24,8 @@ create table if not exists users (
 create table if not exists category (
     category_id int generated always as identity not null,
     category_name varchar(50) not null,
-    constraint pk_category primary key (category_id)
+    constraint pk_category primary key (category_id),
+    constraint category_name_unique unique(category_name)
 );;
 
 create table if not exists event (
