@@ -26,7 +26,7 @@ public class AdminUserController {
     public UserDto addUser(@Valid @RequestBody NewUserRequest userRequest) {
         log.info("Start POST /admin/users with {}", userRequest);
         UserDto savedUser = userService.addUser(userRequest);
-        log.info("End POST /admin/users with {}", userRequest);
+        log.info("End POST /admin/users with {}", savedUser);
         return savedUser;
     }
 
@@ -37,7 +37,7 @@ public class AdminUserController {
             @Positive @RequestParam(name = "size", required = false, defaultValue = "10") int size) {
         log.info("Start GET /admin/users with ids: {}, from: {}, size: {}", ids, from, size);
         List<UserDto> users = userService.getUsers(ids, from, size);
-        log.info("End GET /admin/users with ids: {}, from: {}, size: {}", ids, from, size);
+        log.info("End GET /admin/users with {}", users);
         return users;
     }
 
