@@ -6,12 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.validation.annotation.Validated;
 import ru.practicum.ewm.main.category.dto.CategoryDto;
 import ru.practicum.ewm.main.category.dto.NewCategoryDto;
 import ru.practicum.ewm.main.category.model.Category;
@@ -21,6 +21,7 @@ import java.net.URI;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -102,6 +103,49 @@ public class CategoryServiceIntegrationTests {
         assertThat(returnedCategory.getName(), equalTo(updateCategoryRequest.getName()));
         assertThat(returnedCategory.getId(), equalTo(savedCategoryId));
         assertThat(updatedCategory.getName(), equalTo(updateCategoryRequest.getName()));
+    }
+
+    @Test
+    void getCategories() {
+        Category category1 = new Category("name1");
+        Category category2 = new Category("name2");
+        Category category3 = new Category("name3");
+        categoryRepository.save(category1);
+        categoryRepository.save(category2);
+        categoryRepository.save(category3);
+        Map<String, String> queryParams = Map.of(
+                "from", "1",
+                "size", "2"
+        );
+
+        List<CategoryDto> foundCategories = restTemplate.exchange(
+                host + port + "/categories?from={from}&size={size}",
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<List<CategoryDto>>() {
+                },
+                queryParams
+        ).getBody();
+
+        assertThat(foundCategories.size(), equalTo(2));
+        assertThat(foundCategories.get(0).getName(), equalTo(category2.getName()));
+        assertThat(foundCategories.get(1).getName(), equalTo(category3.getName()));
+    }
+
+    @Test
+    void getCategoryById() {
+        Category category = new Category("name");
+        int categoryId = categoryRepository.save(category).getId();
+
+        CategoryDto foundCategory = restTemplate.exchange(
+                host + port + "/categories/" + categoryId,
+                HttpMethod.GET,
+                null,
+                CategoryDto.class
+        ).getBody();
+
+        assertThat(foundCategory.getName(), equalTo(category.getName()));
+        assertThat(foundCategory.getId(), equalTo(categoryId));
     }
 
     private Category mapRowToCategory(ResultSet resultSet, int rowNum) throws SQLException {

@@ -16,7 +16,6 @@ import ru.practicum.ewm.main.category.service.CategoryService;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -47,8 +46,8 @@ class AdminCategoryControllerTest {
         newCategoryDto.setName("name");
 
         mvc.perform(post("/admin/categories")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(newCategoryDto)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(newCategoryDto)))
                 .andExpect(status().isCreated());
 
         verify(categoryService, times(1))
@@ -151,6 +150,7 @@ class AdminCategoryControllerTest {
                         .content(objectMapper.writeValueAsString(updateRequestDto)))
                 .andExpect(status().isBadRequest());
     }
+
     @Test
     @SneakyThrows
     void updateCategory_whenNameIsMoreThan50_thenStatusIsBadRequest() {

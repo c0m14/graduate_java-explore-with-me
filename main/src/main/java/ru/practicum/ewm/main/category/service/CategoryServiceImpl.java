@@ -7,12 +7,15 @@ import ru.practicum.ewm.main.category.dto.NewCategoryDto;
 import ru.practicum.ewm.main.category.mapper.CategoryMapper;
 import ru.practicum.ewm.main.category.model.Category;
 import ru.practicum.ewm.main.category.repository.CategoryRepository;
+import ru.practicum.ewm.main.exception.NotExistsException;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class CategoryServiceImpl implements CategoryService{
+public class CategoryServiceImpl implements CategoryService {
 
     private final CategoryRepository categoryRepository;
 
@@ -41,5 +44,26 @@ public class CategoryServiceImpl implements CategoryService{
 
         updateCategoryRequest.setId(categoryId);
         return updateCategoryRequest;
+    }
+
+    @Override
+    public List<CategoryDto> getCategories(int from, int size) {
+        List<Category> foundCategories = categoryRepository.findCategories(from, size);
+
+        return foundCategories.stream()
+                .map(CategoryMapper::mapToCategoryDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public CategoryDto getCategoryById(int categoryId) {
+        Category foundCategory = categoryRepository.getCategoryById(categoryId).orElseThrow(
+                () -> new NotExistsException(
+                        "Category",
+                        String.format("Category with id %d not exists", categoryId)
+                )
+        );
+
+        return CategoryMapper.mapToCategoryDto(foundCategory);
     }
 }

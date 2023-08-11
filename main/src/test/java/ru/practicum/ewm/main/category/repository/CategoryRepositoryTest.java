@@ -7,25 +7,28 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import ru.practicum.ewm.main.category.model.Category;
-import ru.practicum.ewm.main.exception.InvalidParamException;
 import ru.practicum.ewm.main.exception.NotExistsException;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 class CategoryRepositoryTest {
 
-    @BeforeEach
-    void beforeEach() {
-        jdbcTemplate.update("DELETE FROM category");
-    }
-
     @Autowired
     private JdbcTemplate jdbcTemplate;
     @Autowired
     private CategoryRepository categoryRepository;
+
+    @BeforeEach
+    void beforeEach() {
+        jdbcTemplate.update("DELETE FROM category");
+    }
 
     @Test
     void save_whenNameExists_thenDataIntegrityViolationExceptionThrown() {
@@ -63,6 +66,50 @@ class CategoryRepositoryTest {
 
         assertThrows(DataIntegrityViolationException.class,
                 () -> categoryRepository.update(updateParams));
+    }
+
+    @Test
+    void getCategoriesReturnedWithOffsetLimit() {
+        Category category1 = new Category("name1");
+        Category savedCategory1 = categoryRepository.save(category1);
+        Category category2 = new Category("name2");
+        Category savedCategory2 = categoryRepository.save(category2);
+
+        List<Category> foundCategories = categoryRepository.findCategories(1, 1);
+
+        assertThat(foundCategories.size(), equalTo(1));
+        assertThat(foundCategories.get(0), equalTo(savedCategory2));
+        assertFalse(foundCategories.contains(savedCategory1));
+    }
+
+    @Test
+    void getCategoriesReturnedWithSizeLimit() {
+        Category category1 = new Category("name1");
+        Category savedCategory1 = categoryRepository.save(category1);
+        Category category2 = new Category("name2");
+        Category savedCategory2 = categoryRepository.save(category2);
+
+        List<Category> foundCategories = categoryRepository.findCategories(0, 2);
+
+        assertThat(foundCategories.size(), equalTo(2));
+        assertThat(foundCategories.get(0), equalTo(savedCategory1));
+        assertThat(foundCategories.get(1), equalTo(savedCategory2));
+    }
+
+    @Test
+    void getCategoriesReturnedEmptyListWhenNotFound() {
+        List<Category> foundCategories = categoryRepository.findCategories(0, 2);
+
+        assertTrue(foundCategories.isEmpty());
+    }
+
+    @Test
+    void getCategoryReturnedOptionalEmptyWhenNotFound() {
+        int categoryId = 0;
+
+        Optional<Category> foundCategory = categoryRepository.getCategoryById(categoryId);
+
+        assertTrue(foundCategory.isEmpty());
     }
 
 

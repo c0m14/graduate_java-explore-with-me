@@ -1,7 +1,6 @@
 package ru.practicum.ewm.main.category.repository;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -9,11 +8,11 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Component;
 import ru.practicum.ewm.main.category.model.Category;
-import ru.practicum.ewm.main.exception.InvalidParamException;
 import ru.practicum.ewm.main.exception.NotExistsException;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -57,6 +56,23 @@ public class CategoryRepositoryJDBCImpl implements CategoryRepository {
                 "WHERE category_id = :categoryId";
 
         jdbcTemplate.update(query, updateParams);
+    }
+
+    @Override
+    public List<Category> findCategories(int offset, int size) {
+        String query = "SELECT category_id, category_name " +
+                "FROM category " +
+                "OFFSET :offset ROWS " +
+                "FETCH NEXT :size ROWS ONLY";
+        SqlParameterSource namedParams = new MapSqlParameterSource()
+                .addValue("offset", offset)
+                .addValue("size", size);
+
+        try {
+            return jdbcTemplate.query(query, namedParams, this::mapRowToCategory);
+        } catch (EmptyResultDataAccessException e) {
+            return List.of();
+        }
     }
 
     @Override
