@@ -10,6 +10,7 @@ import ru.practicum.ewm.main.exception.NotExistsException;
 import ru.practicum.ewm.main.user.model.User;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -163,5 +164,28 @@ class UserRepositoryTest {
     void deleteUserNotExistExceptionThrownIfNotFound() {
         assertThrows(NotExistsException.class,
                 () -> userRepository.deleteUser(999_999_999L));
+    }
+
+    @Test
+    void getUserByIdReturnedOptionalWithUserIfFound() {
+        User user = new User("name", "email@email.com");
+
+        Long userId = userRepository.save(user).getId();
+
+        Optional<User> foundUserOptional = userRepository.getUserById(userId);
+
+        assertFalse(foundUserOptional.isEmpty());
+        assertThat(foundUserOptional.get().getName(), equalTo(user.getName()));
+        assertThat(foundUserOptional.get().getEmail(), equalTo(user.getEmail()));
+        assertThat(foundUserOptional.get().getId(), equalTo(userId));
+    }
+
+    @Test
+    void getUserByIdReturnedOptionalEmptyIdNotFound() {
+        Long userId = 0L;
+
+        Optional<User> foundUserOptional = userRepository.getUserById(userId);
+
+        assertTrue(foundUserOptional.isEmpty());
     }
 }

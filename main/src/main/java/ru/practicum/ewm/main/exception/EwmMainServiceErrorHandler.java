@@ -84,6 +84,13 @@ public class EwmMainServiceErrorHandler {
     }
 
     @ExceptionHandler
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse handleForbiddenException(ForbiddenException e) {
+        log.error(e.getMessage(), e);
+        return new ErrorResponse(e.getParamName(), e.getMessage());
+    }
+
+    @ExceptionHandler
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleThrowable(Throwable e) {
         log.error(e.getMessage(), e);

@@ -43,6 +43,7 @@ public class CategoryServiceIntegrationTests {
 
     @BeforeEach
     void beforeEach() {
+        jdbcTemplate.update("DELETE FROM event");
         jdbcTemplate.update("DELETE FROM category");
     }
 

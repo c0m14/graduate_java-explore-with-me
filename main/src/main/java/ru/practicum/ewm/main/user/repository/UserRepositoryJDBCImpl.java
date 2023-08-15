@@ -15,6 +15,7 @@ import ru.practicum.ewm.main.user.model.User;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -77,6 +78,22 @@ public class UserRepositoryJDBCImpl implements UserRepository {
                     "User",
                     String.format("User with id %d not found", userId)
             );
+        }
+    }
+
+    @Override
+    public Optional<User> getUserById(Long userId) {
+        String query = "SELECT user_id, user_name, email " +
+                "FROM users " +
+                "WHERE user_id = :userId";
+        SqlParameterSource namedParams = new MapSqlParameterSource("userId", userId);
+
+        try {
+            return Optional.of(
+                    jdbcTemplate.queryForObject(query, namedParams, this::mapRowToUser)
+            );
+        } catch (EmptyResultDataAccessException e) {
+            return Optional.empty();
         }
     }
 
