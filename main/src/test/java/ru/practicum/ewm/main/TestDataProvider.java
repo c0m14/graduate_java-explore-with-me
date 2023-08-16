@@ -3,10 +3,7 @@ package ru.practicum.ewm.main;
 import lombok.experimental.UtilityClass;
 import ru.practicum.ewm.main.category.dto.CategoryDto;
 import ru.practicum.ewm.main.category.model.Category;
-import ru.practicum.ewm.main.event.dto.EventShortDto;
-import ru.practicum.ewm.main.event.dto.NewEventDto;
-import ru.practicum.ewm.main.event.dto.StateAction;
-import ru.practicum.ewm.main.event.dto.UpdateEventUserRequest;
+import ru.practicum.ewm.main.event.dto.*;
 import ru.practicum.ewm.main.event.model.Event;
 import ru.practicum.ewm.main.event.model.EventState;
 import ru.practicum.ewm.main.event.model.Location;
@@ -118,6 +115,24 @@ public class TestDataProvider {
                 .location(new Location(123.123f, 124.124f))
                 .requestModeration(true)
                 .stateAction(StateAction.SEND_TO_REVIEW)
+                .build();
+    }
+
+    public EventFullDto getValidFullDto(Long eventId) {
+        return EventFullDto.builder()
+                .id(eventId)
+                .title("title")
+                .annotation("annotation")
+                .description("description")
+                .participantLimit(10)
+                .requestModeration(true)
+                .category(new CategoryDto())
+                .eventDate(LocalDateTime.now().plusDays(1L))
+                .createdOn(LocalDateTime.now().withNano(0))
+                .publishedOn(LocalDateTime.now().plusHours(1).withNano(0))
+                .initiator(new UserShortDto())
+                .paid(true)
+                .state(EventState.PUBLISHED)
                 .build();
     }
 }

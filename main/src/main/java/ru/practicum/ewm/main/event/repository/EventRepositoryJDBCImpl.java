@@ -8,6 +8,8 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Component;
 import ru.practicum.ewm.main.category.model.Category;
+import ru.practicum.ewm.main.event.dto.SearchEventParamsDto;
+import ru.practicum.ewm.main.event.dto.SearchSortOptionDto;
 import ru.practicum.ewm.main.event.model.Event;
 import ru.practicum.ewm.main.event.model.EventState;
 import ru.practicum.ewm.main.event.model.Location;
@@ -111,6 +113,82 @@ public class EventRepositoryJDBCImpl implements EventRepository {
 
         jdbcTemplate.update(query, namedParams);
 
+    }
+
+    @Override
+    public List<Event> findEvents(SearchEventParamsDto searchParams) {
+        StringBuilder queryBuilder = new StringBuilder();
+        queryBuilder.append("SELECT e.event_id, e.title, e.annotation, e.description, e.category_id, e.event_date, ");
+        queryBuilder.append("e.initiator_id, e.paid, e.latitude, e.longitude, e.participant_limit, ");
+        queryBuilder.append("e.request_moderation, e.created_on, e.published_on, e.state, e.published_on, e.state, ");
+        queryBuilder.append("c.category_id, c.category_name, ");
+        queryBuilder.append("u.user_id, u.user_name ");
+        queryBuilder.append("FROM event AS e ");
+        queryBuilder.append("INNER JOIN category AS c ON e.category_id = c.category_id ");
+        queryBuilder.append("INNER JOIN users AS u ON e.initiator_id = u.user_id ");
+        queryBuilder.append("WHERE e.state = :state ");
+        queryBuilder.append("AND e.event_date > :start ");
+        if (searchParams.getRangeEnd() != null) {
+            queryBuilder.append("AND e.event_date < :end ");
+        }
+        if (searchParams.getText() != null && !searchParams.getText().isBlank()) {
+            queryBuilder.append("AND (LOWER(e.annotation) LIKE CONCAT('%',:text,'%') ");
+            queryBuilder.append("OR LOWER(e.description) LIKE CONCAT('%',:text,'%')) ");
+        }
+        if (searchParams.getCategoriesIds() != null && !searchParams.getCategoriesIds().isEmpty()) {
+            queryBuilder.append("AND e.category_id IN (:categoriesIds) ");
+        }
+        if (searchParams.getPaid() != null) {
+            queryBuilder.append("AND e.paid = :paid ");
+        }
+        if (searchParams.getSortOption().equals(SearchSortOptionDto.EVENT_DATE)) {
+            queryBuilder.append("ORDER BY e.event_date ");
+            if (searchParams.getFrom() != null) {
+                queryBuilder.append("OFFSET :offset ROWS ");
+            }
+            if (searchParams.getSize() != null) {
+                queryBuilder.append("FETCH NEXT :size ROWS ONLY");
+            }
+        }
+
+        SqlParameterSource namedParams = new MapSqlParameterSource()
+                .addValue("state", searchParams.getState().toString())
+                .addValue("start", searchParams.getRangeStart())
+                .addValue("end", searchParams.getRangeEnd())
+                .addValue("text", searchParams.getText())
+                .addValue("categoriesIds", searchParams.getCategoriesIds())
+                .addValue("paid", searchParams.getPaid())
+                .addValue("offset", searchParams.getFrom())
+                .addValue("size", searchParams.getSize());
+
+        try {
+            return jdbcTemplate.query(queryBuilder.toString(), namedParams, this::mapRowToEventShort);
+        } catch (EmptyResultDataAccessException e) {
+            return List.of();
+        }
+    }
+
+    @Override
+    public Optional<Event> findEventByIdAndState(Long eventId, EventState state) {
+        String query = "SELECT e.event_id, e.title, e.annotation, e.description, e.category_id, e.event_date, " +
+                "e.initiator_id, e.paid, e.latitude, e.longitude, e.participant_limit, e.request_moderation, e.created_on, " +
+                "e.published_on, e.state, " +
+                "c.category_id, c.category_name, " +
+                "u.user_id, u.user_name " +
+                "FROM event AS e " +
+                "INNER JOIN category AS c ON e.category_id = c.category_id " +
+                "INNER JOIN users AS u ON e.initiator_id = u.user_id " +
+                "WHERE e.event_id = :eventId " +
+                "AND e.state = :state";
+        SqlParameterSource namedParams = new MapSqlParameterSource()
+                .addValue("eventId", eventId)
+                .addValue("state", state.toString());
+
+        try {
+            return Optional.of(jdbcTemplate.queryForObject(query, namedParams, this::mapRowToEventFull));
+        } catch (EmptyResultDataAccessException e) {
+            return Optional.empty();
+        }
     }
 
     private Event mapRowToEventShort(ResultSet resultSet, int rowNum) throws SQLException {

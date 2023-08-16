@@ -56,7 +56,7 @@ public class EwmMainServiceErrorHandler {
     }
 
     @ExceptionHandler
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse handleNotExistsException(NotExistsException e) {
         log.error(e.getMessage(), e);
         return new ErrorResponse(e.getClassName(), e.getMessage());

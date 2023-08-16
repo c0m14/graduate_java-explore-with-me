@@ -7,10 +7,7 @@ import ru.practicum.ewm.main.category.dto.CategoryDto;
 import ru.practicum.ewm.main.category.mapper.CategoryMapper;
 import ru.practicum.ewm.main.category.model.Category;
 import ru.practicum.ewm.main.category.repository.CategoryRepository;
-import ru.practicum.ewm.main.event.dto.EventFullDto;
-import ru.practicum.ewm.main.event.dto.EventShortDto;
-import ru.practicum.ewm.main.event.dto.NewEventDto;
-import ru.practicum.ewm.main.event.dto.UpdateEventUserRequest;
+import ru.practicum.ewm.main.event.dto.*;
 import ru.practicum.ewm.main.event.mapper.EventMapper;
 import ru.practicum.ewm.main.event.model.Event;
 import ru.practicum.ewm.main.event.model.EventState;
@@ -23,6 +20,7 @@ import ru.practicum.ewm.main.user.mapper.UserMapper;
 import ru.practicum.ewm.main.user.model.User;
 import ru.practicum.ewm.main.user.repository.UserRepository;
 import ru.practicum.ewm.statistic.client.StatisticClient;
+import ru.practicum.ewm.statistic.dto.EndpointHitDto;
 import ru.practicum.ewm.statistic.dto.ViewStatsDto;
 
 import java.time.LocalDateTime;
@@ -30,6 +28,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -64,13 +63,7 @@ public class EventServiceImpl implements EventService {
             return List.of();
         }
 
-        Map<Long, Long> eventsViews = getEventsViews(foundEvents);
-
-        List<EventShortDto> eventShortDtos = foundEvents.stream()
-                .map(EventMapper::mapToShortDto)
-                .collect(Collectors.toList());
-
-        setViewsToEvents(eventShortDtos, eventsViews);
+        List<EventShortDto> eventShortDtos = mapToShortDtoAndFetchViews(foundEvents);
         //TODO add confirmed requests
 
         return eventShortDtos;
@@ -85,11 +78,7 @@ public class EventServiceImpl implements EventService {
                         String.format("Event with id %d and initiator id %d not exists", eventId, userId)
                 ));
 
-        Map<Long, Long> eventViews = getEventsViews(List.of(foundEvent));
-
-        EventFullDto eventFullDto = EventMapper.mapToFullDto(foundEvent);
-
-        setViewsToEvents(List.of(eventFullDto), eventViews);
+        EventFullDto eventFullDto = mapToFullDtoAndFetchViews(foundEvent);
 
         //TODO add confirmed requests
         return eventFullDto;
@@ -109,13 +98,50 @@ public class EventServiceImpl implements EventService {
         updateEventFields(eventToUpdate, updateEventUserRequest);
         eventRepository.updateEvent(eventToUpdate);
 
-        Map<Long, Long> eventViews = getEventsViews(List.of(eventToUpdate));
-
-        EventFullDto eventFullDto = EventMapper.mapToFullDto(eventToUpdate);
-
-        setViewsToEvents(List.of(eventFullDto), eventViews);
+        EventFullDto eventFullDto = mapToFullDtoAndFetchViews(eventToUpdate);
 
         //TODO add confirmed requests
+        return eventFullDto;
+    }
+
+    @Override
+    public List<EventShortDto> findEvents(SearchEventParamsDto searchParams, String ip) {
+        formatSearchTextToLowerCase(searchParams);
+        searchParams.setState(EventState.PUBLISHED);
+        defineSearchDatesRange(searchParams);
+        defineSearchSort(searchParams);
+
+        List<Event> foundEvents = eventRepository.findEvents(searchParams);
+        if (foundEvents.isEmpty()) {
+            return List.of();
+        }
+
+        List<EventShortDto> eventShortDtos = mapToShortDtoAndFetchViews(foundEvents);
+
+        if (searchParams.getSortOption().equals(SearchSortOptionDto.VIEWS)) {
+            eventShortDtos = sortByViews(eventShortDtos, searchParams.getFrom(), searchParams.getSize());
+        }
+
+        //TODO add confirmed requests
+        //TODO filter by limit if needed
+        saveEndpointHit("/events", ip);
+        return eventShortDtos;
+    }
+
+    @Override
+    public EventFullDto findEventByIdPublic(Long eventId, String ip) {
+        Event foundEvent = eventRepository.findEventByIdAndState(eventId, EventState.PUBLISHED)
+                .orElseThrow(() -> new NotExistsException(
+                                "Event",
+                                String.format("Published event with id %d not exists", eventId)
+                        )
+                );
+
+        EventFullDto eventFullDto = mapToFullDtoAndFetchViews(foundEvent);
+
+        //TODO add confirmed requests
+        //TODO filter by limit if needed
+        saveEndpointHit(String.format("/events/%d", eventId), ip);
         return eventFullDto;
     }
 
@@ -233,6 +259,68 @@ public class EventServiceImpl implements EventService {
                     break;
             }
         }
+    }
+
+    private void formatSearchTextToLowerCase(SearchEventParamsDto searchParams) {
+        if (searchParams.getText() != null && !searchParams.getText().isBlank()) {
+            String formattedText = searchParams.getText().toLowerCase();
+            searchParams.setText(formattedText);
+        }
+    }
+
+    private void defineSearchDatesRange(SearchEventParamsDto searchParams) {
+        if (searchParams.getRangeStart() == null && searchParams.getRangeEnd() == null) {
+            searchParams.setRangeStart(LocalDateTime.now().withNano(0));
+        }
+    }
+
+    private void defineSearchSort(SearchEventParamsDto searchParams) {
+        if (searchParams.getSortOption() == null) {
+            searchParams.setSortOption(SearchSortOptionDto.EVENT_DATE);
+        }
+    }
+
+    private void saveEndpointHit(String url, String ip) {
+        statisticClient.saveEndpointHit(EndpointHitDto.builder()
+                .app("Ewm-main")
+                .uri(url)
+                .ip(ip)
+                .timestamp(LocalDateTime.now().withNano(0))
+                .build());
+    }
+
+    private List<EventShortDto> sortByViews(List<EventShortDto> originalEvents, Integer from, Integer size) {
+        Stream<EventShortDto> eventsStream = originalEvents.stream()
+                .sorted(Comparator.comparing(EventShortDto::getViews).reversed());
+        if (from != null) {
+            eventsStream = eventsStream.skip(from);
+        }
+        if (size != null) {
+            eventsStream = eventsStream.limit(size);
+        }
+        return eventsStream.collect(Collectors.toList());
+    }
+
+    private List<EventShortDto> mapToShortDtoAndFetchViews(List<Event> events) {
+        Map<Long, Long> eventsViews = getEventsViews(events);
+
+        List<EventShortDto> eventShortDtos = events.stream()
+                .map(EventMapper::mapToShortDto)
+                .collect(Collectors.toList());
+
+        setViewsToEvents(eventShortDtos, eventsViews);
+
+        return eventShortDtos;
+    }
+
+    private EventFullDto mapToFullDtoAndFetchViews(Event event) {
+        Map<Long, Long> eventViews = getEventsViews(List.of(event));
+
+        EventFullDto eventFullDto = EventMapper.mapToFullDto(event);
+
+        setViewsToEvents(List.of(eventFullDto), eventViews);
+
+        return eventFullDto;
     }
 
 }

@@ -8,6 +8,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import ru.practicum.ewm.main.TestDataProvider;
 import ru.practicum.ewm.main.category.model.Category;
 import ru.practicum.ewm.main.category.repository.CategoryRepository;
+import ru.practicum.ewm.main.event.dto.SearchEventParamsDto;
+import ru.practicum.ewm.main.event.dto.SearchSortOptionDto;
 import ru.practicum.ewm.main.event.model.Event;
 import ru.practicum.ewm.main.event.model.EventState;
 import ru.practicum.ewm.main.event.model.Location;
@@ -20,6 +22,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -290,6 +293,258 @@ public class EventRepositoryTests {
                 .publishedOn(resultSet.getString("published_on") == null ?
                         null : LocalDateTime.parse(resultSet.getString("published_on")))
                 .state(null);
+    }
+
+    @Test
+    void findEvents_whenInvoked_thenFoundEventsWithMinimumSearchParams() {
+        User user = userRepository.save(TestDataProvider.getValidUserToSave());
+        Category category = categoryRepository.save(TestDataProvider.getValidCategoryToSave());
+        Event event1 = TestDataProvider.getValidNotSavedEvent(user, category);
+        event1.setState(EventState.PENDING);
+        Event event2 = TestDataProvider.getValidNotSavedEvent(user, category);
+        event2.setState(EventState.CANCELED);
+        Event event3 = TestDataProvider.getValidNotSavedEvent(user, category);
+        event3.setState(EventState.PUBLISHED);
+        Event savedEvent1 = eventRepository.save(event1);
+        Event savedEvent2 = eventRepository.save(event2);
+        Event savedEvent3 = eventRepository.save(event3);
+        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+                .state(EventState.PUBLISHED)
+                .sortOption(SearchSortOptionDto.EVENT_DATE)
+                .rangeStart(LocalDateTime.now().withNano(0))
+                .build();
+
+        List<Event> foundEvents = eventRepository.findEvents(searchParams);
+
+        assertThat(foundEvents.size(), equalTo(1));
+        assertThat(foundEvents.get(0).getId(), equalTo(savedEvent3.getId()));
+    }
+
+    @Test
+    void findEvents_whenInvoked_thenFoundEventsWithInitiatorAndCategory() {
+        User user = userRepository.save(TestDataProvider.getValidUserToSave());
+        Category category = categoryRepository.save(TestDataProvider.getValidCategoryToSave());
+        Event event3 = TestDataProvider.getValidNotSavedEvent(user, category);
+        event3.setState(EventState.PUBLISHED);
+        eventRepository.save(event3);
+        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+                .state(EventState.PUBLISHED)
+                .sortOption(SearchSortOptionDto.EVENT_DATE)
+                .rangeStart(LocalDateTime.now().withNano(0))
+                .build();
+
+        List<Event> foundEvents = eventRepository.findEvents(searchParams);
+
+        assertThat(foundEvents.get(0).getInitiator().getId(), equalTo(user.getId()));
+        assertThat(foundEvents.get(0).getInitiator().getName(), equalTo(user.getName()));
+        assertThat(foundEvents.get(0).getCategory().getId(), equalTo(category.getId()));
+        assertThat(foundEvents.get(0).getCategory().getName(), equalTo(category.getName()));
+    }
+
+    @Test
+    void findEvents_whenEndRangePassed_thenFilterUsingParam() {
+        User user = userRepository.save(TestDataProvider.getValidUserToSave());
+        Category category = categoryRepository.save(TestDataProvider.getValidCategoryToSave());
+        Event event1 = TestDataProvider.getValidNotSavedEvent(user, category);
+        Event event2 = TestDataProvider.getValidNotSavedEvent(user, category);
+        Event event3 = TestDataProvider.getValidNotSavedEvent(user, category);
+        event1.setState(EventState.PUBLISHED);
+        event2.setState(EventState.PUBLISHED);
+        event3.setState(EventState.PUBLISHED);
+        event1.setEventDate(LocalDateTime.now().plusDays(5).withNano(0));
+        event2.setEventDate(LocalDateTime.now().plusDays(10).withNano(0));
+        event3.setEventDate(LocalDateTime.now().plusDays(2).withNano(0));
+        Event savedEvent1 = eventRepository.save(event1);
+        Event savedEvent2 = eventRepository.save(event2);
+        Event savedEvent3 = eventRepository.save(event3);
+        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+                .state(EventState.PUBLISHED)
+                .sortOption(SearchSortOptionDto.EVENT_DATE)
+                .rangeStart(LocalDateTime.now().withNano(0))
+                .rangeEnd(LocalDateTime.now().plusDays(4).withNano(0))
+                .build();
+
+        List<Event> foundEvents = eventRepository.findEvents(searchParams);
+
+        assertThat(foundEvents.size(), equalTo(1));
+        assertThat(foundEvents.get(0).getId(), equalTo(savedEvent3.getId()));
+    }
+
+    @Test
+    void findEvents_whenTextPassed_thenFilterUsingParamIgnoringCaseInDB() {
+        String searchedText = "searched";
+        User user = userRepository.save(TestDataProvider.getValidUserToSave());
+        Category category = categoryRepository.save(TestDataProvider.getValidCategoryToSave());
+        Event event1 = TestDataProvider.getValidNotSavedEvent(user, category);
+        Event event2 = TestDataProvider.getValidNotSavedEvent(user, category);
+        Event event3 = TestDataProvider.getValidNotSavedEvent(user, category);
+        event1.setState(EventState.PUBLISHED);
+        event2.setState(EventState.PUBLISHED);
+        event3.setState(EventState.PUBLISHED);
+        event1.setAnnotation("a".repeat(20) + "SeaRchedText");
+        event2.setDescription("d".repeat(20) + "SEarchedTeXT");
+        event3.setDescription("d".repeat(20));
+        Event savedEvent1 = eventRepository.save(event1);
+        Event savedEvent2 = eventRepository.save(event2);
+        Event savedEvent3 = eventRepository.save(event3);
+        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+                .state(EventState.PUBLISHED)
+                .sortOption(SearchSortOptionDto.EVENT_DATE)
+                .rangeStart(LocalDateTime.now().withNano(0))
+                .text(searchedText)
+                .build();
+
+        List<Event> foundEvents = eventRepository.findEvents(searchParams);
+
+        assertThat(foundEvents.size(), equalTo(2));
+        assertThat(foundEvents.get(0).getId(), equalTo(savedEvent1.getId()));
+        assertThat(foundEvents.get(1).getId(), equalTo(savedEvent2.getId()));
+    }
+
+    @Test
+    void findEvents_whenCategoriesPassed_thenFilterUsingParam() {
+        User user = userRepository.save(TestDataProvider.getValidUserToSave());
+        Category category1 = categoryRepository.save(TestDataProvider.getValidCategoryToSave());
+        Category category2 = categoryRepository.save(TestDataProvider.getValidCategoryToSave());
+        Category category3 = categoryRepository.save(TestDataProvider.getValidCategoryToSave());
+        Event event1 = TestDataProvider.getValidNotSavedEvent(user, category1);
+        Event event2 = TestDataProvider.getValidNotSavedEvent(user, category2);
+        Event event3 = TestDataProvider.getValidNotSavedEvent(user, category3);
+        event1.setState(EventState.PUBLISHED);
+        event2.setState(EventState.PUBLISHED);
+        event3.setState(EventState.PUBLISHED);
+        Event savedEvent1 = eventRepository.save(event1);
+        Event savedEvent2 = eventRepository.save(event2);
+        Event savedEvent3 = eventRepository.save(event3);
+        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+                .state(EventState.PUBLISHED)
+                .sortOption(SearchSortOptionDto.EVENT_DATE)
+                .rangeStart(LocalDateTime.now().withNano(0))
+                .categoriesIds(Set.of(category1.getId(), category2.getId()))
+                .build();
+
+        List<Event> foundEvents = eventRepository.findEvents(searchParams);
+
+        assertThat(foundEvents.size(), equalTo(2));
+        assertThat(foundEvents.get(0).getId(), equalTo(savedEvent1.getId()));
+        assertThat(foundEvents.get(1).getId(), equalTo(savedEvent2.getId()));
+    }
+
+    @Test
+    void findEvents_whenPaidPassed_thenFilterUsingParam() {
+        User user = userRepository.save(TestDataProvider.getValidUserToSave());
+        Category category = categoryRepository.save(TestDataProvider.getValidCategoryToSave());
+        Event event1 = TestDataProvider.getValidNotSavedEvent(user, category);
+        Event event2 = TestDataProvider.getValidNotSavedEvent(user, category);
+        Event event3 = TestDataProvider.getValidNotSavedEvent(user, category);
+        event1.setState(EventState.PUBLISHED);
+        event2.setState(EventState.PUBLISHED);
+        event3.setState(EventState.PUBLISHED);
+        event1.setPaid(true);
+        event2.setPaid(true);
+        event3.setPaid(false);
+        Event savedEvent1 = eventRepository.save(event1);
+        Event savedEvent2 = eventRepository.save(event2);
+        Event savedEvent3 = eventRepository.save(event3);
+        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+                .state(EventState.PUBLISHED)
+                .sortOption(SearchSortOptionDto.EVENT_DATE)
+                .rangeStart(LocalDateTime.now().withNano(0))
+                .paid(true)
+                .build();
+
+        List<Event> foundEvents = eventRepository.findEvents(searchParams);
+
+        assertThat(foundEvents.size(), equalTo(2));
+        assertThat(foundEvents.get(0).getId(), equalTo(savedEvent1.getId()));
+        assertThat(foundEvents.get(1).getId(), equalTo(savedEvent2.getId()));
+    }
+
+    @Test
+    void findEvents_whenSortByEventDateAndFromPassed_thenFilterUsingParam() {
+        Integer from = 1;
+        User user = userRepository.save(TestDataProvider.getValidUserToSave());
+        Category category = categoryRepository.save(TestDataProvider.getValidCategoryToSave());
+        Event event1 = TestDataProvider.getValidNotSavedEvent(user, category);
+        Event event2 = TestDataProvider.getValidNotSavedEvent(user, category);
+        Event event3 = TestDataProvider.getValidNotSavedEvent(user, category);
+        event1.setState(EventState.PUBLISHED);
+        event2.setState(EventState.PUBLISHED);
+        event3.setState(EventState.PUBLISHED);
+        event1.setEventDate(LocalDateTime.now().plusMinutes(1).withNano(0));
+        event2.setEventDate(LocalDateTime.now().plusMinutes(2).withNano(0));
+        event3.setEventDate(LocalDateTime.now().plusMinutes(3).withNano(0));
+        Event savedEvent1 = eventRepository.save(event1);
+        Event savedEvent2 = eventRepository.save(event2);
+        Event savedEvent3 = eventRepository.save(event3);
+        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+                .state(EventState.PUBLISHED)
+                .sortOption(SearchSortOptionDto.EVENT_DATE)
+                .rangeStart(LocalDateTime.now().withNano(0))
+                .from(from)
+                .build();
+
+        List<Event> foundEvents = eventRepository.findEvents(searchParams);
+
+        assertThat(foundEvents.size(), equalTo(2));
+        assertThat(foundEvents.get(0).getId(), equalTo(savedEvent2.getId()));
+        assertThat(foundEvents.get(1).getId(), equalTo(savedEvent3.getId()));
+    }
+
+    @Test
+    void findEvents_whenSortByEventDateAndSizePassed_thenFilterUsingParam() {
+        Integer size = 1;
+        User user = userRepository.save(TestDataProvider.getValidUserToSave());
+        Category category = categoryRepository.save(TestDataProvider.getValidCategoryToSave());
+        Event event1 = TestDataProvider.getValidNotSavedEvent(user, category);
+        Event event2 = TestDataProvider.getValidNotSavedEvent(user, category);
+        Event event3 = TestDataProvider.getValidNotSavedEvent(user, category);
+        event1.setState(EventState.PUBLISHED);
+        event2.setState(EventState.PUBLISHED);
+        event3.setState(EventState.PUBLISHED);
+        event1.setEventDate(LocalDateTime.now().plusMinutes(1).withNano(0));
+        event2.setEventDate(LocalDateTime.now().plusMinutes(2).withNano(0));
+        event3.setEventDate(LocalDateTime.now().plusMinutes(3).withNano(0));
+        Event savedEvent1 = eventRepository.save(event1);
+        Event savedEvent2 = eventRepository.save(event2);
+        Event savedEvent3 = eventRepository.save(event3);
+        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+                .state(EventState.PUBLISHED)
+                .sortOption(SearchSortOptionDto.EVENT_DATE)
+                .rangeStart(LocalDateTime.now().withNano(0))
+                .size(size)
+                .build();
+
+        List<Event> foundEvents = eventRepository.findEvents(searchParams);
+
+        assertThat(foundEvents.size(), equalTo(1));
+        assertThat(foundEvents.get(0).getId(), equalTo(savedEvent1.getId()));
+    }
+
+    @Test
+    void findEvents_whenNoEventFound_thenReturnEmptyList() {
+        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+                .state(EventState.PUBLISHED)
+                .sortOption(SearchSortOptionDto.EVENT_DATE)
+                .rangeStart(LocalDateTime.now().withNano(0))
+                .build();
+
+        List<Event> foundEvents = eventRepository.findEvents(searchParams);
+
+        assertTrue(foundEvents.isEmpty());
+    }
+
+    @Test
+    void findEventByIdAndState_whenEventNotPublished_thenOptionalEmptyReturned() {
+        User user = userRepository.save(TestDataProvider.getValidUserToSave());
+        Category category = categoryRepository.save(TestDataProvider.getValidCategoryToSave());
+        Event event = TestDataProvider.getValidNotSavedEvent(user, category);
+        event.setState(EventState.PENDING);
+        Event savedEvent = eventRepository.save(event);
+
+        Optional<Event> foundEventOptional = eventRepository.findEventByIdAndState(event.getId(), EventState.PUBLISHED);
+
+        assertTrue(foundEventOptional.isEmpty());
     }
 
 }

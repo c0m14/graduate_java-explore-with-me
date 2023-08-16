@@ -35,6 +35,9 @@ create table if not exists event (
     constraint fk_even_users foreign key (initiator_id) references users (user_id)
         on delete cascade
 );
+create index if not exists event_date_index on event (event_date);
+create index if not exists event_participant_limit_index on event (participant_limit);
+create index if not exists event_state_index on event (state);
 
 create table if not exists event_participation_request (
     request_id bigint generated always as identity not null,

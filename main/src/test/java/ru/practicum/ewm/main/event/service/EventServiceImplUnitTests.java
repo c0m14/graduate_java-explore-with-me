@@ -20,6 +20,7 @@ import ru.practicum.ewm.main.exception.NotExistsException;
 import ru.practicum.ewm.main.user.model.User;
 import ru.practicum.ewm.main.user.repository.UserRepository;
 import ru.practicum.ewm.statistic.client.StatisticClient;
+import ru.practicum.ewm.statistic.dto.EndpointHitDto;
 import ru.practicum.ewm.statistic.dto.ViewStatsDto;
 
 import java.time.LocalDateTime;
@@ -57,6 +58,14 @@ class EventServiceImplUnitTests {
     private ArgumentCaptor<List<String>> urisArgumentCaptor;
     @Captor
     private ArgumentCaptor<Boolean> uniqueArgumentCaptor;
+    @Captor
+    private ArgumentCaptor<SearchEventParamsDto> searchParamsArgumentCaptor;
+    @Captor
+    private ArgumentCaptor<EndpointHitDto> endpointHitArgumentCaptor;
+    @Captor
+    private ArgumentCaptor<Long> eventIdArgumentCaptor;
+    @Captor
+    private ArgumentCaptor<EventState> eventStateArgumentCaptor;
 
     @Test
     void addEvent_whenEventDateEarlierThan2HoursFromNow_thenInvalidParamExceptionThrown() {
@@ -822,6 +831,439 @@ class EventServiceImplUnitTests {
         }
 
         EventFullDto foundEventDto = eventService.updateEvent(userId, eventId, updateRequest);
+
+        assertThat(foundEventDto.getViews(), equalTo(0L));
+    }
+
+    @Test
+    void findEvents_whenInvoked_thenSearchTextFormatToLowerCase() {
+        String ip = "1.1.1.1";
+        String text = "TeXt";
+        String expectedText = text.toLowerCase();
+        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+                .text(text)
+                .build();
+
+        eventService.findEvents(searchParams, ip);
+
+        verify(eventRepository, times(1))
+                .findEvents(searchParamsArgumentCaptor.capture());
+        assertThat(searchParamsArgumentCaptor.getValue().getText(), equalTo(expectedText));
+    }
+
+    @Test
+    void findEvents_whenInvoked_thenSearchStateEqualsPublished() {
+        String ip = "1.1.1.1";
+        SearchEventParamsDto searchParams = SearchEventParamsDto.builder().build();
+
+        eventService.findEvents(searchParams, ip);
+
+        verify(eventRepository, times(1))
+                .findEvents(searchParamsArgumentCaptor.capture());
+        assertThat(searchParamsArgumentCaptor.getValue().getState(), equalTo(EventState.PUBLISHED));
+    }
+
+    @Test
+    void findEvents_whenStartRangeIsNullButEndRangeIsNot_thenEndPassedToRepository() {
+        String ip = "1.1.1.1";
+        LocalDateTime endRange = LocalDateTime.now().plusDays(1).withNano(0);
+        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+                .rangeEnd(endRange)
+                .build();
+
+        eventService.findEvents(searchParams, ip);
+
+        verify(eventRepository, times(1))
+                .findEvents(searchParamsArgumentCaptor.capture());
+        assertThat(searchParamsArgumentCaptor.getValue().getRangeEnd(), equalTo(endRange));
+        assertThat(searchParamsArgumentCaptor.getValue().getRangeStart(), equalTo(null));
+    }
+
+    @Test
+    void findEvents_whenEndRangeIsNullButStartRangeIsNot_thenStarttPassedToRepository() {
+        String ip = "1.1.1.1";
+        LocalDateTime startRange = LocalDateTime.now().plusDays(1).withNano(0);
+        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+                .rangeStart(startRange)
+                .build();
+
+        eventService.findEvents(searchParams, ip);
+
+        verify(eventRepository, times(1))
+                .findEvents(searchParamsArgumentCaptor.capture());
+        assertThat(searchParamsArgumentCaptor.getValue().getRangeStart(), equalTo(startRange));
+        assertThat(searchParamsArgumentCaptor.getValue().getRangeEnd(), equalTo(null));
+    }
+
+    @Test
+    void findEvents_whenEndRangeIsNullAndStartRangeIsNull_thenStartEqualsNowToRepository() {
+        String ip = "1.1.1.1";
+        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+                .build();
+
+        eventService.findEvents(searchParams, ip);
+
+        verify(eventRepository, times(1))
+                .findEvents(searchParamsArgumentCaptor.capture());
+        assertThat(searchParamsArgumentCaptor.getValue().getRangeStart(),
+                equalTo(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)));
+    }
+
+    @Test
+    void findEvents_whenSortOptionIsNull_thenSortByEventDate() {
+        String ip = "1.1.1.1";
+        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+                .build();
+
+        eventService.findEvents(searchParams, ip);
+
+        verify(eventRepository, times(1))
+                .findEvents(searchParamsArgumentCaptor.capture());
+        assertThat(searchParamsArgumentCaptor.getValue().getSortOption(),
+                equalTo(SearchSortOptionDto.EVENT_DATE));
+    }
+
+    @Test
+    void findEvents_whenEventFound_thenParamsPassedToStatisticClient() {
+        Long eventId = 1L;
+        String ip = "1.1.1.1";
+        SearchEventParamsDto searchParams = SearchEventParamsDto.builder().build();
+        Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        foundEvent.setId(eventId);
+        when(eventRepository.findEvents(searchParams))
+                .thenReturn(List.of(foundEvent));
+
+        eventService.findEvents(searchParams, ip);
+
+        verify(statisticClient, times(1))
+                .getViewStats(
+                        startArgumentCaptor.capture(),
+                        endArgumentCaptor.capture(),
+                        urisArgumentCaptor.capture(),
+                        uniqueArgumentCaptor.capture()
+                );
+        assertThat(startArgumentCaptor.getValue(), equalTo(foundEvent.getCreatedOn()));
+        assertThat(endArgumentCaptor.getValue(), equalTo(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)));
+        assertThat(urisArgumentCaptor.getValue().get(0), equalTo(String.format("/events/%d", eventId)));
+        assertThat(uniqueArgumentCaptor.getValue(), equalTo(true));
+    }
+
+    @Test
+    void findEvents_whenViewsFound_thenAddedToDto() {
+        Long eventId = 1L;
+        String ip = "1.1.1.1";
+        SearchEventParamsDto searchParams = SearchEventParamsDto.builder().build();
+        Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        foundEvent.setId(eventId);
+        ViewStatsDto viewStatsDto = ViewStatsDto.builder()
+                .app("app")
+                .uri(String.format("/events/%d", eventId))
+                .hits(10L)
+                .build();
+        when(eventRepository.findEvents(searchParams))
+                .thenReturn(List.of(foundEvent));
+        when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
+                .thenReturn(List.of(viewStatsDto));
+        try (MockedStatic<EventMapper> eventMapperMock = Mockito.mockStatic(EventMapper.class)) {
+            eventMapperMock.when(() -> EventMapper.mapToShortDto(foundEvent))
+                    .thenReturn(TestDataProvider.getValidShortDto(foundEvent.getId()));
+        }
+
+        List<EventShortDto> foundEvents = eventService.findEvents(searchParams, ip);
+
+        assertThat(foundEvents.get(0).getViews(), equalTo(10L));
+    }
+
+    @Test
+    void findEvents_whenViewsNotFround_thenZeroViewsAddedToDto() {
+        Long eventId = 1L;
+        String ip = "1.1.1.1";
+        SearchEventParamsDto searchParams = SearchEventParamsDto.builder().build();
+        Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        foundEvent.setId(eventId);
+        ViewStatsDto viewStatsDto = ViewStatsDto.builder()
+                .app("app")
+                .uri("/events/999")
+                .hits(10L)
+                .build();
+        when(eventRepository.findEvents(searchParams))
+                .thenReturn(List.of(foundEvent));
+        when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
+                .thenReturn(List.of(viewStatsDto));
+        try (MockedStatic<EventMapper> eventMapperMock = Mockito.mockStatic(EventMapper.class)) {
+            eventMapperMock.when(() -> EventMapper.mapToShortDto(foundEvent))
+                    .thenReturn(TestDataProvider.getValidShortDto(foundEvent.getId()));
+        }
+
+        List<EventShortDto> foundEvents = eventService.findEvents(searchParams, ip);
+
+        assertThat(foundEvents.get(0).getViews(), equalTo(0L));
+    }
+
+    @Test
+    void findEvents_whenSortByViewsWithFromAndSize_thenSortedByViewsWithFromAndSizeLimit() {
+        Long event1Id = 1L;
+        Long event2Id = 2L;
+        Long event3Id = 3L;
+        Integer from = 1;
+        Integer size = 1;
+        String ip = "1.1.1.1";
+        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+                .sortOption(SearchSortOptionDto.VIEWS)
+                .from(from)
+                .size(size)
+                .build();
+        Event event1 = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        Event event2 = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        Event event3 = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        event1.setId(event1Id);
+        event2.setId(event2Id);
+        event3.setId(event3Id);
+        ViewStatsDto viewStatsDto1 = ViewStatsDto.builder()
+                .app("app")
+                .uri("/events/1")
+                .hits(1L)
+                .build();
+        ViewStatsDto viewStatsDto2 = ViewStatsDto.builder()
+                .app("app")
+                .uri("/events/2")
+                .hits(10L)
+                .build();
+        ViewStatsDto viewStatsDto3 = ViewStatsDto.builder()
+                .app("app")
+                .uri("/events/3")
+                .hits(20L)
+                .build();
+        when(eventRepository.findEvents(searchParams))
+                .thenReturn(List.of(event1, event2, event3));
+        when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
+                .thenReturn(List.of(viewStatsDto1, viewStatsDto2, viewStatsDto3));
+        try (MockedStatic<EventMapper> eventMapperMock = Mockito.mockStatic(EventMapper.class)) {
+            eventMapperMock.when(() -> EventMapper.mapToShortDto(event1))
+                    .thenReturn(TestDataProvider.getValidShortDto(event1.getId()));
+            eventMapperMock.when(() -> EventMapper.mapToShortDto(event2))
+                    .thenReturn(TestDataProvider.getValidShortDto(event2.getId()));
+            eventMapperMock.when(() -> EventMapper.mapToShortDto(event3))
+                    .thenReturn(TestDataProvider.getValidShortDto(event3.getId()));
+        }
+
+        List<EventShortDto> foundEvents = eventService.findEvents(searchParams, ip);
+
+        assertThat(foundEvents.size(), equalTo(1));
+        assertThat(foundEvents.get(0).getViews(), equalTo(10L));
+    }
+
+    @Test
+    void findEvents_whenSortByViewsWithFrom_thenSortedByViewsWithFromLimit() {
+        Long event1Id = 1L;
+        Long event2Id = 2L;
+        Long event3Id = 3L;
+        Integer from = 1;
+        String ip = "1.1.1.1";
+        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+                .sortOption(SearchSortOptionDto.VIEWS)
+                .from(from)
+                .build();
+        Event event1 = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        Event event2 = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        Event event3 = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        event1.setId(event1Id);
+        event2.setId(event2Id);
+        event3.setId(event3Id);
+        ViewStatsDto viewStatsDto1 = ViewStatsDto.builder()
+                .app("app")
+                .uri("/events/1")
+                .hits(1L)
+                .build();
+        ViewStatsDto viewStatsDto2 = ViewStatsDto.builder()
+                .app("app")
+                .uri("/events/2")
+                .hits(10L)
+                .build();
+        ViewStatsDto viewStatsDto3 = ViewStatsDto.builder()
+                .app("app")
+                .uri("/events/3")
+                .hits(20L)
+                .build();
+        when(eventRepository.findEvents(searchParams))
+                .thenReturn(List.of(event1, event2, event3));
+        when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
+                .thenReturn(List.of(viewStatsDto1, viewStatsDto2, viewStatsDto3));
+        try (MockedStatic<EventMapper> eventMapperMock = Mockito.mockStatic(EventMapper.class)) {
+            eventMapperMock.when(() -> EventMapper.mapToShortDto(event1))
+                    .thenReturn(TestDataProvider.getValidShortDto(event1.getId()));
+            eventMapperMock.when(() -> EventMapper.mapToShortDto(event2))
+                    .thenReturn(TestDataProvider.getValidShortDto(event2.getId()));
+            eventMapperMock.when(() -> EventMapper.mapToShortDto(event3))
+                    .thenReturn(TestDataProvider.getValidShortDto(event3.getId()));
+        }
+
+        List<EventShortDto> foundEvents = eventService.findEvents(searchParams, ip);
+
+        assertThat(foundEvents.size(), equalTo(2));
+        assertThat(foundEvents.get(0).getViews(), equalTo(10L));
+        assertThat(foundEvents.get(1).getViews(), equalTo(1L));
+    }
+
+    @Test
+    void findEvents_whenSortByViewsWithSize_thenSortedByViewsWithSizeLimit() {
+        Long event1Id = 1L;
+        Long event2Id = 2L;
+        Long event3Id = 3L;
+        Integer size = 1;
+        String ip = "1.1.1.1";
+        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+                .sortOption(SearchSortOptionDto.VIEWS)
+                .size(size)
+                .build();
+        Event event1 = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        Event event2 = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        Event event3 = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        event1.setId(event1Id);
+        event2.setId(event2Id);
+        event3.setId(event3Id);
+        ViewStatsDto viewStatsDto1 = ViewStatsDto.builder()
+                .app("app")
+                .uri("/events/1")
+                .hits(1L)
+                .build();
+        ViewStatsDto viewStatsDto2 = ViewStatsDto.builder()
+                .app("app")
+                .uri("/events/2")
+                .hits(10L)
+                .build();
+        ViewStatsDto viewStatsDto3 = ViewStatsDto.builder()
+                .app("app")
+                .uri("/events/3")
+                .hits(20L)
+                .build();
+        when(eventRepository.findEvents(searchParams))
+                .thenReturn(List.of(event1, event2, event3));
+        when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
+                .thenReturn(List.of(viewStatsDto1, viewStatsDto2, viewStatsDto3));
+        try (MockedStatic<EventMapper> eventMapperMock = Mockito.mockStatic(EventMapper.class)) {
+            eventMapperMock.when(() -> EventMapper.mapToShortDto(event1))
+                    .thenReturn(TestDataProvider.getValidShortDto(event1.getId()));
+            eventMapperMock.when(() -> EventMapper.mapToShortDto(event2))
+                    .thenReturn(TestDataProvider.getValidShortDto(event2.getId()));
+            eventMapperMock.when(() -> EventMapper.mapToShortDto(event3))
+                    .thenReturn(TestDataProvider.getValidShortDto(event3.getId()));
+        }
+
+        List<EventShortDto> foundEvents = eventService.findEvents(searchParams, ip);
+
+        assertThat(foundEvents.size(), equalTo(1));
+        assertThat(foundEvents.get(0).getViews(), equalTo(20L));
+    }
+
+    @Test
+    void findEvents_whenInvoked_thenRequestToSaveEndpointHitSent() {
+        String ip = "1.1.1.1";
+        String uri = "/events";
+        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+                .build();
+        Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        when(eventRepository.findEvents(searchParams))
+                .thenReturn(List.of(foundEvent));
+
+        eventService.findEvents(searchParams, ip);
+
+        verify(statisticClient, times(1))
+                .saveEndpointHit(endpointHitArgumentCaptor.capture());
+        assertThat(endpointHitArgumentCaptor.getValue().getUri(), equalTo(uri));
+        assertThat(endpointHitArgumentCaptor.getValue().getIp(), equalTo(ip));
+        assertThat(endpointHitArgumentCaptor.getValue().getTimestamp(),
+                equalTo(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)));
+    }
+
+    @Test
+    void findEventByIdPublic_whenInvoked_thenIdAndPublishedStatePassedToRepository() {
+        String ip = "1.1.1.1";
+        Long eventId = 0L;
+
+        try {
+            eventService.findEventByIdPublic(eventId, ip);
+        } catch (Throwable e) {
+            //capture argument to verify without full mocking
+        }
+
+        verify(eventRepository, times(1))
+                .findEventByIdAndState(eventIdArgumentCaptor.capture(),
+                        eventStateArgumentCaptor.capture());
+        assertThat(eventIdArgumentCaptor.getValue(), equalTo(eventId));
+        assertThat(eventStateArgumentCaptor.getValue(), equalTo(EventState.PUBLISHED));
+    }
+
+    @Test
+    void findEventByIdPublic_whenEventFound_thenParamsPassedToStatisticClient() {
+        Long eventId = 1L;
+        String ip = "1.1.1.1";
+        Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        foundEvent.setId(eventId);
+        when(eventRepository.findEventByIdAndState(eventId, EventState.PUBLISHED))
+                .thenReturn(Optional.of(foundEvent));
+
+        eventService.findEventByIdPublic(eventId, ip);
+
+        verify(statisticClient, times(1))
+                .getViewStats(
+                        startArgumentCaptor.capture(),
+                        endArgumentCaptor.capture(),
+                        urisArgumentCaptor.capture(),
+                        uniqueArgumentCaptor.capture()
+                );
+        assertThat(startArgumentCaptor.getValue(), equalTo(foundEvent.getCreatedOn()));
+        assertThat(endArgumentCaptor.getValue(), equalTo(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)));
+        assertThat(urisArgumentCaptor.getValue().get(0), equalTo(String.format("/events/%d", eventId)));
+        assertThat(uniqueArgumentCaptor.getValue(), equalTo(true));
+    }
+
+    @Test
+    void findEventByIdPublic_whenViewsFound_thenAddedToDto() {
+        Long eventId = 1L;
+        String ip = "1.1.1.1";
+        Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        foundEvent.setId(eventId);
+        ViewStatsDto viewStatsDto = ViewStatsDto.builder()
+                .app("app")
+                .uri(String.format("/events/%d", eventId))
+                .hits(10L)
+                .build();
+        when(eventRepository.findEventByIdAndState(eventId, EventState.PUBLISHED))
+                .thenReturn(Optional.of(foundEvent));
+        when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
+                .thenReturn(List.of(viewStatsDto));
+        try (MockedStatic<EventMapper> eventMapperMock = Mockito.mockStatic(EventMapper.class)) {
+            eventMapperMock.when(() -> EventMapper.mapToFullDto(foundEvent))
+                    .thenReturn(TestDataProvider.getValidFullDto(foundEvent.getId()));
+        }
+
+        EventFullDto foundEventDto = eventService.findEventByIdPublic(eventId, ip);
+
+        assertThat(foundEventDto.getViews(), equalTo(10L));
+    }
+
+    @Test
+    void findEventByIdPublic_whenViewsNotFround_thenZeroViewsAddedToDto() {
+        Long eventId = 1L;
+        String ip = "1.1.1.1";
+        Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        foundEvent.setId(eventId);
+        ViewStatsDto viewStatsDto = ViewStatsDto.builder()
+                .app("app")
+                .uri("/events/999")
+                .hits(10L)
+                .build();
+        when(eventRepository.findEventByIdAndState(eventId, EventState.PUBLISHED))
+                .thenReturn(Optional.of(foundEvent));
+        when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
+                .thenReturn(List.of(viewStatsDto));
+        try (MockedStatic<EventMapper> eventMapperMock = Mockito.mockStatic(EventMapper.class)) {
+            eventMapperMock.when(() -> EventMapper.mapToFullDto(foundEvent))
+                    .thenReturn(TestDataProvider.getValidFullDto(foundEvent.getId()));
+        }
+
+        EventFullDto foundEventDto = eventService.findEventByIdPublic(eventId, ip);
 
         assertThat(foundEventDto.getViews(), equalTo(0L));
     }
