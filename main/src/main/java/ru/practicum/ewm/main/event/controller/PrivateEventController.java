@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.ewm.main.event.dto.EventFullDto;
 import ru.practicum.ewm.main.event.dto.EventShortDto;
 import ru.practicum.ewm.main.event.dto.NewEventDto;
-import ru.practicum.ewm.main.event.dto.UpdateEventUserRequest;
+import ru.practicum.ewm.main.event.dto.updateRequest.UpdateEventUserRequest;
 import ru.practicum.ewm.main.event.service.EventService;
 
 import javax.validation.Valid;
@@ -63,7 +63,7 @@ public class PrivateEventController {
             @Valid @RequestBody UpdateEventUserRequest updateEventRequest) {
         log.info("Start PATCH /users/{userId}/events/{eventId} with userId: {}, eventId: {}, " +
                 "updateEventRequest: {}", userId, eventId, updateEventRequest);
-        EventFullDto updatedEvent = eventService.updateEvent(userId, eventId, updateEventRequest);
+        EventFullDto updatedEvent = eventService.updateEventByUser(userId, eventId, updateEventRequest);
         log.info("Finish PATCH /users/{userId}/events/{eventId} with {}", updatedEvent);
         return updatedEvent;
     }

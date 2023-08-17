@@ -8,7 +8,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import ru.practicum.ewm.main.TestDataProvider;
 import ru.practicum.ewm.main.category.model.Category;
 import ru.practicum.ewm.main.category.repository.CategoryRepository;
-import ru.practicum.ewm.main.event.dto.*;
+import ru.practicum.ewm.main.event.dto.EventFullDto;
+import ru.practicum.ewm.main.event.dto.EventShortDto;
+import ru.practicum.ewm.main.event.dto.NewEventDto;
+import ru.practicum.ewm.main.event.dto.searchRequest.AdminSearchParamsDto;
+import ru.practicum.ewm.main.event.dto.searchRequest.PublicSearchParamsDto;
+import ru.practicum.ewm.main.event.dto.searchRequest.SearchSortOptionDto;
+import ru.practicum.ewm.main.event.dto.updateRequest.AdminRequestStateAction;
+import ru.practicum.ewm.main.event.dto.updateRequest.UpdateEventAdminRequest;
+import ru.practicum.ewm.main.event.dto.updateRequest.UpdateEventUserRequest;
+import ru.practicum.ewm.main.event.dto.updateRequest.UserRequestStateAction;
 import ru.practicum.ewm.main.event.mapper.EventMapper;
 import ru.practicum.ewm.main.event.model.Event;
 import ru.practicum.ewm.main.event.model.EventState;
@@ -59,7 +68,7 @@ class EventServiceImplUnitTests {
     @Captor
     private ArgumentCaptor<Boolean> uniqueArgumentCaptor;
     @Captor
-    private ArgumentCaptor<SearchEventParamsDto> searchParamsArgumentCaptor;
+    private ArgumentCaptor<PublicSearchParamsDto> searchParamsArgumentCaptor;
     @Captor
     private ArgumentCaptor<EndpointHitDto> endpointHitArgumentCaptor;
     @Captor
@@ -68,7 +77,7 @@ class EventServiceImplUnitTests {
     private ArgumentCaptor<EventState> eventStateArgumentCaptor;
 
     @Test
-    void addEvent_whenEventDateEarlierThan2HoursFromNow_thenInvalidParamExceptionThrown() {
+    void addEvent_whenEventDateEarlierThan2HoursFromNow_thenForbiddenExceptionThrown() {
         Long userId = 0L;
         NewEventDto newEventDto = TestDataProvider.getValidNewEventDto();
         newEventDto.setEventDate(LocalDateTime.now().plusMinutes(1));
@@ -77,7 +86,7 @@ class EventServiceImplUnitTests {
 
         verify(eventRepository, times(0))
                 .save(any());
-        assertThrows(InvalidParamException.class,
+        assertThrows(ForbiddenException.class,
                 executable);
     }
 
@@ -415,7 +424,7 @@ class EventServiceImplUnitTests {
         Long eventId = 0L;
         when(userRepository.getUserById(userId))
                 .thenReturn(Optional.of(new User()));
-        when(eventRepository.getByInitiatorIdAndEventId(userId, eventId))
+        when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.empty());
 
         Executable executable = () -> eventService.findUserEventById(userId, eventId);
@@ -431,7 +440,7 @@ class EventServiceImplUnitTests {
         foundEvent.setId(eventId);
         when(userRepository.getUserById(userId))
                 .thenReturn(Optional.of(new User()));
-        when(eventRepository.getByInitiatorIdAndEventId(userId, eventId))
+        when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.of(foundEvent));
 
         try {
@@ -466,7 +475,7 @@ class EventServiceImplUnitTests {
                 .build();
         when(userRepository.getUserById(userId))
                 .thenReturn(Optional.of(new User()));
-        when(eventRepository.getByInitiatorIdAndEventId(userId, eventId))
+        when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.of(foundEvent));
         when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
                 .thenReturn(List.of(viewStatsDto));
@@ -493,7 +502,7 @@ class EventServiceImplUnitTests {
                 .build();
         when(userRepository.getUserById(userId))
                 .thenReturn(Optional.of(new User()));
-        when(eventRepository.getByInitiatorIdAndEventId(userId, eventId))
+        when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.of(foundEvent));
         when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
                 .thenReturn(List.of(viewStatsDto));
@@ -508,44 +517,44 @@ class EventServiceImplUnitTests {
     }
 
     @Test
-    void updateEvent_whenEventNotFound_thenNotExistsExceptionThrown() {
+    void updateEventByUser_whenEventNotFound_thenNotExistsExceptionThrown() {
         Long userId = 0L;
         Long eventId = 0L;
         UpdateEventUserRequest updateRequest = new UpdateEventUserRequest();
-        when(eventRepository.getByInitiatorIdAndEventId(userId, eventId))
+        when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.empty());
 
-        Executable executable = () -> eventService.updateEvent(userId, eventId, updateRequest);
+        Executable executable = () -> eventService.updateEventByUser(userId, eventId, updateRequest);
 
         assertThrows(NotExistsException.class, executable);
     }
 
     @Test
-    void updateEvent_whenEventStatusIsPublished_thenForbiddenExceptionThrown() {
+    void updateEventByUser_whenEventStatusIsPublished_thenForbiddenExceptionThrown() {
         Long userId = 0L;
         Long eventId = 0L;
         UpdateEventUserRequest updateRequest = new UpdateEventUserRequest();
         Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
         updatedEvent.setState(EventState.PUBLISHED);
-        when(eventRepository.getByInitiatorIdAndEventId(userId, eventId))
+        when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.of(updatedEvent));
 
-        Executable executable = () -> eventService.updateEvent(userId, eventId, updateRequest);
+        Executable executable = () -> eventService.updateEventByUser(userId, eventId, updateRequest);
 
         assertThrows(ForbiddenException.class, executable);
     }
 
     @Test
-    void updateEvent_whenUpdateTitleNotNull_thenUpdatedFieldPassedToRepository() {
+    void updateEventByUser_whenUpdateTitleNotNull_thenUpdatedFieldPassedToRepository() {
         Long userId = 0L;
         Long eventId = 0L;
         UpdateEventUserRequest updateRequest = new UpdateEventUserRequest();
         updateRequest.setTitle("a".repeat(5));
         Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
-        when(eventRepository.getByInitiatorIdAndEventId(userId, eventId))
+        when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.of(updatedEvent));
 
-        eventService.updateEvent(userId, eventId, updateRequest);
+        eventService.updateEventByUser(userId, eventId, updateRequest);
 
         verify(eventRepository, times(1))
                 .updateEvent(eventArgumentCaptor.capture());
@@ -554,16 +563,16 @@ class EventServiceImplUnitTests {
     }
 
     @Test
-    void updateEvent_whenUpdateDescriptionNotNull_thenUpdatedFieldPassedToRepository() {
+    void updateEventByUser_whenUpdateDescriptionNotNull_thenUpdatedFieldPassedToRepository() {
         Long userId = 0L;
         Long eventId = 0L;
         UpdateEventUserRequest updateRequest = new UpdateEventUserRequest();
         updateRequest.setDescription("a".repeat(21));
         Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
-        when(eventRepository.getByInitiatorIdAndEventId(userId, eventId))
+        when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.of(updatedEvent));
 
-        eventService.updateEvent(userId, eventId, updateRequest);
+        eventService.updateEventByUser(userId, eventId, updateRequest);
 
         verify(eventRepository, times(1))
                 .updateEvent(eventArgumentCaptor.capture());
@@ -572,7 +581,7 @@ class EventServiceImplUnitTests {
     }
 
     @Test
-    void updateEvent_whenUpdateCategoryNotNullAndExist_thenUpdatedFieldPassedToRepository() {
+    void updateEventByUser_whenUpdateCategoryNotNullAndExist_thenUpdatedFieldPassedToRepository() {
         Long userId = 0L;
         Long eventId = 0L;
         int categoryId = 1;
@@ -581,12 +590,12 @@ class EventServiceImplUnitTests {
         UpdateEventUserRequest updateRequest = new UpdateEventUserRequest();
         updateRequest.setCategory(categoryId);
         Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
-        when(eventRepository.getByInitiatorIdAndEventId(userId, eventId))
+        when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.of(updatedEvent));
         when(categoryRepository.getCategoryById(categoryId))
                 .thenReturn(Optional.of(category));
 
-        eventService.updateEvent(userId, eventId, updateRequest);
+        eventService.updateEventByUser(userId, eventId, updateRequest);
 
         verify(eventRepository, times(1))
                 .updateEvent(eventArgumentCaptor.capture());
@@ -595,34 +604,34 @@ class EventServiceImplUnitTests {
     }
 
     @Test
-    void updateEvent_whenUpdateCategoryNotNullAndNotExist_thenInvalidParamExceptionThrown() {
+    void updateEventByUser_whenUpdateCategoryNotNullAndNotExist_thenInvalidParamExceptionThrown() {
         Long userId = 0L;
         Long eventId = 0L;
         int categoryId = 1;
         UpdateEventUserRequest updateRequest = new UpdateEventUserRequest();
         updateRequest.setCategory(categoryId);
         Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
-        when(eventRepository.getByInitiatorIdAndEventId(userId, eventId))
+        when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.of(updatedEvent));
         when(categoryRepository.getCategoryById(categoryId))
                 .thenReturn(Optional.empty());
 
-        Executable executable = () -> eventService.updateEvent(userId, eventId, updateRequest);
+        Executable executable = () -> eventService.updateEventByUser(userId, eventId, updateRequest);
 
         assertThrows(InvalidParamException.class, executable);
     }
 
     @Test
-    void updateEvent_whenUpdateEventDate_thenUpdatedFieldPassedToRepository() {
+    void updateEventByUser_whenUpdateEventDate_thenUpdatedFieldPassedToRepository() {
         Long userId = 0L;
         Long eventId = 0L;
         UpdateEventUserRequest updateRequest = new UpdateEventUserRequest();
         updateRequest.setEventDate(LocalDateTime.now().plusDays(1).withNano(0));
         Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
-        when(eventRepository.getByInitiatorIdAndEventId(userId, eventId))
+        when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.of(updatedEvent));
 
-        eventService.updateEvent(userId, eventId, updateRequest);
+        eventService.updateEventByUser(userId, eventId, updateRequest);
 
         verify(eventRepository, times(1))
                 .updateEvent(eventArgumentCaptor.capture());
@@ -631,32 +640,32 @@ class EventServiceImplUnitTests {
     }
 
     @Test
-    void updateEvent_whenUpdateEventDateAndNotValid_thenInvalidParamExceptionThrown() {
+    void updateEventByUser_whenUpdateEventDateAndNotValid_thenForbiddenExceptionThrown() {
         Long userId = 0L;
         Long eventId = 0L;
         UpdateEventUserRequest updateRequest = new UpdateEventUserRequest();
         updateRequest.setEventDate(LocalDateTime.now().plusMinutes(1).withNano(0));
         Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
-        when(eventRepository.getByInitiatorIdAndEventId(userId, eventId))
+        when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.of(updatedEvent));
 
-        Executable executable = () -> eventService.updateEvent(userId, eventId, updateRequest);
+        Executable executable = () -> eventService.updateEventByUser(userId, eventId, updateRequest);
 
-        assertThrows(InvalidParamException.class, executable);
+        assertThrows(ForbiddenException.class, executable);
     }
 
     @Test
-    void updateEvent_whenUpdatePaid_thenUpdatedFieldPassedToRepository() {
+    void updateEventByUser_whenUpdatePaid_thenUpdatedFieldPassedToRepository() {
         Long userId = 0L;
         Long eventId = 0L;
         Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
         updatedEvent.setPaid(false);
         UpdateEventUserRequest updateRequest = new UpdateEventUserRequest();
         updateRequest.setPaid(true);
-        when(eventRepository.getByInitiatorIdAndEventId(userId, eventId))
+        when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.of(updatedEvent));
 
-        eventService.updateEvent(userId, eventId, updateRequest);
+        eventService.updateEventByUser(userId, eventId, updateRequest);
 
         verify(eventRepository, times(1))
                 .updateEvent(eventArgumentCaptor.capture());
@@ -665,16 +674,16 @@ class EventServiceImplUnitTests {
     }
 
     @Test
-    void updateEvent_whenUpdateLocation_thenUpdatedFieldPassedToRepository() {
+    void updateEventByUser_whenUpdateLocation_thenUpdatedFieldPassedToRepository() {
         Long userId = 0L;
         Long eventId = 0L;
         Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
         UpdateEventUserRequest updateRequest = new UpdateEventUserRequest();
         updateRequest.setLocation(new Location(333.222f, 777.333f));
-        when(eventRepository.getByInitiatorIdAndEventId(userId, eventId))
+        when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.of(updatedEvent));
 
-        eventService.updateEvent(userId, eventId, updateRequest);
+        eventService.updateEventByUser(userId, eventId, updateRequest);
 
         verify(eventRepository, times(1))
                 .updateEvent(eventArgumentCaptor.capture());
@@ -683,17 +692,17 @@ class EventServiceImplUnitTests {
     }
 
     @Test
-    void updateEvent_whenUpdateRequestModeration_thenUpdatedFieldPassedToRepository() {
+    void updateEventByUser_whenUpdateRequestModeration_thenUpdatedFieldPassedToRepository() {
         Long userId = 0L;
         Long eventId = 0L;
         Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
         updatedEvent.setRequestModeration(false);
         UpdateEventUserRequest updateRequest = new UpdateEventUserRequest();
         updateRequest.setRequestModeration(true);
-        when(eventRepository.getByInitiatorIdAndEventId(userId, eventId))
+        when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.of(updatedEvent));
 
-        eventService.updateEvent(userId, eventId, updateRequest);
+        eventService.updateEventByUser(userId, eventId, updateRequest);
 
         verify(eventRepository, times(1))
                 .updateEvent(eventArgumentCaptor.capture());
@@ -702,17 +711,17 @@ class EventServiceImplUnitTests {
     }
 
     @Test
-    void updateEvent_whenUpdateParticipantLimit_thenUpdatedFieldPassedToRepository() {
+    void updateEventByUser_whenUpdateParticipantLimit_thenUpdatedFieldPassedToRepository() {
         Long userId = 0L;
         Long eventId = 0L;
         Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
         updatedEvent.setParticipantLimit(0);
         UpdateEventUserRequest updateRequest = new UpdateEventUserRequest();
         updateRequest.setParticipantLimit(100);
-        when(eventRepository.getByInitiatorIdAndEventId(userId, eventId))
+        when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.of(updatedEvent));
 
-        eventService.updateEvent(userId, eventId, updateRequest);
+        eventService.updateEventByUser(userId, eventId, updateRequest);
 
         verify(eventRepository, times(1))
                 .updateEvent(eventArgumentCaptor.capture());
@@ -721,17 +730,17 @@ class EventServiceImplUnitTests {
     }
 
     @Test
-    void updateEvent_whenUpdateStateAndActionIsCancelReview_thenCanceledStatePassedToRepository() {
+    void updateEventByUser_whenUpdateStateAndActionIsCancelReview_thenCanceledStatePassedToRepository() {
         Long userId = 0L;
         Long eventId = 0L;
         Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
         updatedEvent.setState(EventState.PENDING);
         UpdateEventUserRequest updateRequest = new UpdateEventUserRequest();
-        updateRequest.setStateAction(StateAction.CANCEL_REVIEW);
-        when(eventRepository.getByInitiatorIdAndEventId(userId, eventId))
+        updateRequest.setStateAction(UserRequestStateAction.CANCEL_REVIEW);
+        when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.of(updatedEvent));
 
-        eventService.updateEvent(userId, eventId, updateRequest);
+        eventService.updateEventByUser(userId, eventId, updateRequest);
 
         verify(eventRepository, times(1))
                 .updateEvent(eventArgumentCaptor.capture());
@@ -740,17 +749,17 @@ class EventServiceImplUnitTests {
     }
 
     @Test
-    void updateEvent_whenUpdateStateAndActionIsSendToReview_thenPendingStatePassedToRepository() {
+    void updateEventByUser_whenUpdateStateAndActionIsSendToReview_thenPendingStatePassedToRepository() {
         Long userId = 0L;
         Long eventId = 0L;
         Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
         updatedEvent.setState(EventState.CANCELED);
         UpdateEventUserRequest updateRequest = new UpdateEventUserRequest();
-        updateRequest.setStateAction(StateAction.SEND_TO_REVIEW);
-        when(eventRepository.getByInitiatorIdAndEventId(userId, eventId))
+        updateRequest.setStateAction(UserRequestStateAction.SEND_TO_REVIEW);
+        when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.of(updatedEvent));
 
-        eventService.updateEvent(userId, eventId, updateRequest);
+        eventService.updateEventByUser(userId, eventId, updateRequest);
 
         verify(eventRepository, times(1))
                 .updateEvent(eventArgumentCaptor.capture());
@@ -759,16 +768,16 @@ class EventServiceImplUnitTests {
     }
 
     @Test
-    void updateEvent_whenEventFound_thenParamsPassedToStatisticClient() {
+    void updateEventByUser_whenEventFound_thenParamsPassedToStatisticClient() {
         Long userId = 0L;
         Long eventId = 1L;
         UpdateEventUserRequest updateRequest = new UpdateEventUserRequest();
         Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
         foundEvent.setId(eventId);
-        when(eventRepository.getByInitiatorIdAndEventId(userId, eventId))
+        when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.of(foundEvent));
 
-        eventService.updateEvent(userId, eventId, updateRequest);
+        eventService.updateEventByUser(userId, eventId, updateRequest);
 
         verify(statisticClient, times(1))
                 .getViewStats(
@@ -784,7 +793,7 @@ class EventServiceImplUnitTests {
     }
 
     @Test
-    void updateEvent_whenViewsFound_thenAddedToDto() {
+    void updateEventByUser_whenViewsFound_thenAddedToDto() {
         Long userId = 0L;
         Long eventId = 1L;
         Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
@@ -795,7 +804,7 @@ class EventServiceImplUnitTests {
                 .uri(String.format("/events/%d", eventId))
                 .hits(10L)
                 .build();
-        when(eventRepository.getByInitiatorIdAndEventId(userId, eventId))
+        when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.of(foundEvent));
         when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
                 .thenReturn(List.of(viewStatsDto));
@@ -804,13 +813,13 @@ class EventServiceImplUnitTests {
                     .thenReturn(TestDataProvider.getValidShortDto(foundEvent.getId()));
         }
 
-        EventFullDto foundEventDto = eventService.updateEvent(userId, eventId, updateRequest);
+        EventFullDto foundEventDto = eventService.updateEventByUser(userId, eventId, updateRequest);
 
         assertThat(foundEventDto.getViews(), equalTo(10L));
     }
 
     @Test
-    void updateEvent_whenViewsNotFround_thenZeroViewsAddedToDto() {
+    void updateEventByUser_whenViewsNotFround_thenZeroViewsAddedToDto() {
         Long userId = 0L;
         Long eventId = 1L;
         Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
@@ -821,7 +830,7 @@ class EventServiceImplUnitTests {
                 .uri("/events/999")
                 .hits(10L)
                 .build();
-        when(eventRepository.getByInitiatorIdAndEventId(userId, eventId))
+        when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.of(foundEvent));
         when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
                 .thenReturn(List.of(viewStatsDto));
@@ -830,7 +839,7 @@ class EventServiceImplUnitTests {
                     .thenReturn(TestDataProvider.getValidShortDto(foundEvent.getId()));
         }
 
-        EventFullDto foundEventDto = eventService.updateEvent(userId, eventId, updateRequest);
+        EventFullDto foundEventDto = eventService.updateEventByUser(userId, eventId, updateRequest);
 
         assertThat(foundEventDto.getViews(), equalTo(0L));
     }
@@ -840,26 +849,26 @@ class EventServiceImplUnitTests {
         String ip = "1.1.1.1";
         String text = "TeXt";
         String expectedText = text.toLowerCase();
-        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+        PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder()
                 .text(text)
                 .build();
 
         eventService.findEvents(searchParams, ip);
 
         verify(eventRepository, times(1))
-                .findEvents(searchParamsArgumentCaptor.capture());
+                .findEventsPublic(searchParamsArgumentCaptor.capture());
         assertThat(searchParamsArgumentCaptor.getValue().getText(), equalTo(expectedText));
     }
 
     @Test
     void findEvents_whenInvoked_thenSearchStateEqualsPublished() {
         String ip = "1.1.1.1";
-        SearchEventParamsDto searchParams = SearchEventParamsDto.builder().build();
+        PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder().build();
 
         eventService.findEvents(searchParams, ip);
 
         verify(eventRepository, times(1))
-                .findEvents(searchParamsArgumentCaptor.capture());
+                .findEventsPublic(searchParamsArgumentCaptor.capture());
         assertThat(searchParamsArgumentCaptor.getValue().getState(), equalTo(EventState.PUBLISHED));
     }
 
@@ -867,14 +876,14 @@ class EventServiceImplUnitTests {
     void findEvents_whenStartRangeIsNullButEndRangeIsNot_thenEndPassedToRepository() {
         String ip = "1.1.1.1";
         LocalDateTime endRange = LocalDateTime.now().plusDays(1).withNano(0);
-        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+        PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder()
                 .rangeEnd(endRange)
                 .build();
 
         eventService.findEvents(searchParams, ip);
 
         verify(eventRepository, times(1))
-                .findEvents(searchParamsArgumentCaptor.capture());
+                .findEventsPublic(searchParamsArgumentCaptor.capture());
         assertThat(searchParamsArgumentCaptor.getValue().getRangeEnd(), equalTo(endRange));
         assertThat(searchParamsArgumentCaptor.getValue().getRangeStart(), equalTo(null));
     }
@@ -883,14 +892,14 @@ class EventServiceImplUnitTests {
     void findEvents_whenEndRangeIsNullButStartRangeIsNot_thenStarttPassedToRepository() {
         String ip = "1.1.1.1";
         LocalDateTime startRange = LocalDateTime.now().plusDays(1).withNano(0);
-        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+        PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder()
                 .rangeStart(startRange)
                 .build();
 
         eventService.findEvents(searchParams, ip);
 
         verify(eventRepository, times(1))
-                .findEvents(searchParamsArgumentCaptor.capture());
+                .findEventsPublic(searchParamsArgumentCaptor.capture());
         assertThat(searchParamsArgumentCaptor.getValue().getRangeStart(), equalTo(startRange));
         assertThat(searchParamsArgumentCaptor.getValue().getRangeEnd(), equalTo(null));
     }
@@ -898,13 +907,13 @@ class EventServiceImplUnitTests {
     @Test
     void findEvents_whenEndRangeIsNullAndStartRangeIsNull_thenStartEqualsNowToRepository() {
         String ip = "1.1.1.1";
-        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+        PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder()
                 .build();
 
         eventService.findEvents(searchParams, ip);
 
         verify(eventRepository, times(1))
-                .findEvents(searchParamsArgumentCaptor.capture());
+                .findEventsPublic(searchParamsArgumentCaptor.capture());
         assertThat(searchParamsArgumentCaptor.getValue().getRangeStart(),
                 equalTo(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)));
     }
@@ -912,13 +921,13 @@ class EventServiceImplUnitTests {
     @Test
     void findEvents_whenSortOptionIsNull_thenSortByEventDate() {
         String ip = "1.1.1.1";
-        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+        PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder()
                 .build();
 
         eventService.findEvents(searchParams, ip);
 
         verify(eventRepository, times(1))
-                .findEvents(searchParamsArgumentCaptor.capture());
+                .findEventsPublic(searchParamsArgumentCaptor.capture());
         assertThat(searchParamsArgumentCaptor.getValue().getSortOption(),
                 equalTo(SearchSortOptionDto.EVENT_DATE));
     }
@@ -927,10 +936,10 @@ class EventServiceImplUnitTests {
     void findEvents_whenEventFound_thenParamsPassedToStatisticClient() {
         Long eventId = 1L;
         String ip = "1.1.1.1";
-        SearchEventParamsDto searchParams = SearchEventParamsDto.builder().build();
+        PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder().build();
         Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
         foundEvent.setId(eventId);
-        when(eventRepository.findEvents(searchParams))
+        when(eventRepository.findEventsPublic(searchParams))
                 .thenReturn(List.of(foundEvent));
 
         eventService.findEvents(searchParams, ip);
@@ -952,7 +961,7 @@ class EventServiceImplUnitTests {
     void findEvents_whenViewsFound_thenAddedToDto() {
         Long eventId = 1L;
         String ip = "1.1.1.1";
-        SearchEventParamsDto searchParams = SearchEventParamsDto.builder().build();
+        PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder().build();
         Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
         foundEvent.setId(eventId);
         ViewStatsDto viewStatsDto = ViewStatsDto.builder()
@@ -960,7 +969,7 @@ class EventServiceImplUnitTests {
                 .uri(String.format("/events/%d", eventId))
                 .hits(10L)
                 .build();
-        when(eventRepository.findEvents(searchParams))
+        when(eventRepository.findEventsPublic(searchParams))
                 .thenReturn(List.of(foundEvent));
         when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
                 .thenReturn(List.of(viewStatsDto));
@@ -978,7 +987,7 @@ class EventServiceImplUnitTests {
     void findEvents_whenViewsNotFround_thenZeroViewsAddedToDto() {
         Long eventId = 1L;
         String ip = "1.1.1.1";
-        SearchEventParamsDto searchParams = SearchEventParamsDto.builder().build();
+        PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder().build();
         Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
         foundEvent.setId(eventId);
         ViewStatsDto viewStatsDto = ViewStatsDto.builder()
@@ -986,7 +995,7 @@ class EventServiceImplUnitTests {
                 .uri("/events/999")
                 .hits(10L)
                 .build();
-        when(eventRepository.findEvents(searchParams))
+        when(eventRepository.findEventsPublic(searchParams))
                 .thenReturn(List.of(foundEvent));
         when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
                 .thenReturn(List.of(viewStatsDto));
@@ -1008,7 +1017,7 @@ class EventServiceImplUnitTests {
         Integer from = 1;
         Integer size = 1;
         String ip = "1.1.1.1";
-        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+        PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder()
                 .sortOption(SearchSortOptionDto.VIEWS)
                 .from(from)
                 .size(size)
@@ -1034,7 +1043,7 @@ class EventServiceImplUnitTests {
                 .uri("/events/3")
                 .hits(20L)
                 .build();
-        when(eventRepository.findEvents(searchParams))
+        when(eventRepository.findEventsPublic(searchParams))
                 .thenReturn(List.of(event1, event2, event3));
         when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
                 .thenReturn(List.of(viewStatsDto1, viewStatsDto2, viewStatsDto3));
@@ -1060,7 +1069,7 @@ class EventServiceImplUnitTests {
         Long event3Id = 3L;
         Integer from = 1;
         String ip = "1.1.1.1";
-        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+        PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder()
                 .sortOption(SearchSortOptionDto.VIEWS)
                 .from(from)
                 .build();
@@ -1085,7 +1094,7 @@ class EventServiceImplUnitTests {
                 .uri("/events/3")
                 .hits(20L)
                 .build();
-        when(eventRepository.findEvents(searchParams))
+        when(eventRepository.findEventsPublic(searchParams))
                 .thenReturn(List.of(event1, event2, event3));
         when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
                 .thenReturn(List.of(viewStatsDto1, viewStatsDto2, viewStatsDto3));
@@ -1112,7 +1121,7 @@ class EventServiceImplUnitTests {
         Long event3Id = 3L;
         Integer size = 1;
         String ip = "1.1.1.1";
-        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+        PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder()
                 .sortOption(SearchSortOptionDto.VIEWS)
                 .size(size)
                 .build();
@@ -1137,7 +1146,7 @@ class EventServiceImplUnitTests {
                 .uri("/events/3")
                 .hits(20L)
                 .build();
-        when(eventRepository.findEvents(searchParams))
+        when(eventRepository.findEventsPublic(searchParams))
                 .thenReturn(List.of(event1, event2, event3));
         when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
                 .thenReturn(List.of(viewStatsDto1, viewStatsDto2, viewStatsDto3));
@@ -1160,10 +1169,10 @@ class EventServiceImplUnitTests {
     void findEvents_whenInvoked_thenRequestToSaveEndpointHitSent() {
         String ip = "1.1.1.1";
         String uri = "/events";
-        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+        PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder()
                 .build();
         Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
-        when(eventRepository.findEvents(searchParams))
+        when(eventRepository.findEventsPublic(searchParams))
                 .thenReturn(List.of(foundEvent));
 
         eventService.findEvents(searchParams, ip);
@@ -1264,6 +1273,421 @@ class EventServiceImplUnitTests {
         }
 
         EventFullDto foundEventDto = eventService.findEventByIdPublic(eventId, ip);
+
+        assertThat(foundEventDto.getViews(), equalTo(0L));
+    }
+
+    @Test
+    void findEventsAdmin_whenEventsNotFound_thenEmptyListReturned() {
+        AdminSearchParamsDto searchParams = AdminSearchParamsDto.builder().build();
+        when(eventRepository.findEventsAdmin(searchParams))
+                .thenReturn(List.of());
+
+        List<EventFullDto> foundEvents = eventService.findEventsAdmin(searchParams);
+
+        assertTrue(foundEvents.isEmpty());
+    }
+
+    @Test
+    void findEventsAdmin_whenEventFound_thenParamsPassedToStatisticClient() {
+        AdminSearchParamsDto searchParams = AdminSearchParamsDto.builder().build();
+        Long eventId = 1L;
+        Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        foundEvent.setId(eventId);
+        when(eventRepository.findEventsAdmin(searchParams))
+                .thenReturn(List.of(foundEvent));
+
+        eventService.findEventsAdmin(searchParams);
+
+        verify(statisticClient, times(1))
+                .getViewStats(
+                        startArgumentCaptor.capture(),
+                        endArgumentCaptor.capture(),
+                        urisArgumentCaptor.capture(),
+                        uniqueArgumentCaptor.capture()
+                );
+        assertThat(startArgumentCaptor.getValue(), equalTo(foundEvent.getCreatedOn()));
+        assertThat(endArgumentCaptor.getValue(), equalTo(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)));
+        assertThat(urisArgumentCaptor.getValue().get(0), equalTo(String.format("/events/%d", eventId)));
+        assertThat(uniqueArgumentCaptor.getValue(), equalTo(true));
+    }
+
+    @Test
+    void findEventsAdmin_whenViewsFound_thenAddedToDto() {
+        AdminSearchParamsDto searchParams = AdminSearchParamsDto.builder().build();
+        Long eventId = 1L;
+        Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        foundEvent.setId(eventId);
+        ViewStatsDto viewStatsDto = ViewStatsDto.builder()
+                .app("app")
+                .uri(String.format("/events/%d", eventId))
+                .hits(10L)
+                .build();
+        when(eventRepository.findEventsAdmin(searchParams))
+                .thenReturn(List.of(foundEvent));
+        when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
+                .thenReturn(List.of(viewStatsDto));
+        try (MockedStatic<EventMapper> eventMapperMock = Mockito.mockStatic(EventMapper.class)) {
+            eventMapperMock.when(() -> EventMapper.mapToFullDto(foundEvent))
+                    .thenReturn(TestDataProvider.getValidFullDto(foundEvent.getId()));
+        }
+
+        List<EventFullDto> foundEventDtos = eventService.findEventsAdmin(searchParams);
+
+        assertThat(foundEventDtos.get(0).getViews(), equalTo(10L));
+    }
+
+    @Test
+    void findEventsAdmin_whenViewsNotFround_thenZeroViewsAddedToDto() {
+        AdminSearchParamsDto searchParams = AdminSearchParamsDto.builder().build();
+        Long eventId = 1L;
+        Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        foundEvent.setId(eventId);
+        ViewStatsDto viewStatsDto = ViewStatsDto.builder()
+                .app("app")
+                .uri("/events/999")
+                .hits(10L)
+                .build();
+        when(eventRepository.findEventsAdmin(searchParams))
+                .thenReturn(List.of(foundEvent));
+        when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
+                .thenReturn(List.of(viewStatsDto));
+        try (MockedStatic<EventMapper> eventMapperMock = Mockito.mockStatic(EventMapper.class)) {
+            eventMapperMock.when(() -> EventMapper.mapToFullDto(foundEvent))
+                    .thenReturn(TestDataProvider.getValidFullDto(foundEvent.getId()));
+        }
+
+        List<EventFullDto> foundEventDtos = eventService.findEventsAdmin(searchParams);
+
+        assertThat(foundEventDtos.get(0).getViews(), equalTo(0L));
+    }
+
+
+    @Test
+    void updateEventByAdmin_whenEventNotFound_thenNotExistsExceptionThrown() {
+        Long eventId = 0L;
+        UpdateEventAdminRequest updateRequest = new UpdateEventAdminRequest();
+        when(eventRepository.findEventById(eventId))
+                .thenReturn(Optional.empty());
+
+        Executable executable = () -> eventService.updateEventByAdmin(eventId, updateRequest);
+
+        assertThrows(NotExistsException.class, executable);
+    }
+
+    @Test
+    void updateEventByAdmin_whenEventStatusIsPublishedAndReject_thenForbiddenExceptionThrown() {
+        Long eventId = 0L;
+        UpdateEventAdminRequest updateRequest = new UpdateEventAdminRequest();
+        updateRequest.setStateAction(AdminRequestStateAction.REJECT_EVENT);
+        Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        updatedEvent.setState(EventState.PUBLISHED);
+        when(eventRepository.findEventById(eventId))
+                .thenReturn(Optional.of(updatedEvent));
+
+        Executable executable = () -> eventService.updateEventByAdmin(eventId, updateRequest);
+
+        assertThrows(ForbiddenException.class, executable);
+    }
+
+    @Test
+    void updateEventByAdmin_whenEventStatusIsCancelledAndPublish_thenForbiddenExceptionThrown() {
+        Long eventId = 0L;
+        UpdateEventAdminRequest updateRequest = new UpdateEventAdminRequest();
+        updateRequest.setStateAction(AdminRequestStateAction.PUBLISH_EVENT);
+        Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        updatedEvent.setState(EventState.CANCELED);
+        when(eventRepository.findEventById(eventId))
+                .thenReturn(Optional.of(updatedEvent));
+
+        Executable executable = () -> eventService.updateEventByAdmin(eventId, updateRequest);
+
+        assertThrows(ForbiddenException.class, executable);
+    }
+
+    @Test
+    void updateEventByAdmin_whenUpdateTitleNotNull_thenUpdatedFieldPassedToRepository() {
+        Long eventId = 0L;
+        UpdateEventAdminRequest updateRequest = new UpdateEventAdminRequest();
+        updateRequest.setTitle("a".repeat(5));
+        Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        when(eventRepository.findEventById(eventId))
+                .thenReturn(Optional.of(updatedEvent));
+
+        eventService.updateEventByAdmin(eventId, updateRequest);
+
+        verify(eventRepository, times(1))
+                .updateEvent(eventArgumentCaptor.capture());
+
+        assertThat(eventArgumentCaptor.getValue().getTitle(), equalTo(updateRequest.getTitle()));
+    }
+
+    @Test
+    void updateEventByAdmin_whenUpdateDescriptionNotNull_thenUpdatedFieldPassedToRepository() {
+        Long eventId = 0L;
+        UpdateEventAdminRequest updateRequest = new UpdateEventAdminRequest();
+        updateRequest.setDescription("a".repeat(21));
+        Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        when(eventRepository.findEventById(eventId))
+                .thenReturn(Optional.of(updatedEvent));
+
+        eventService.updateEventByAdmin(eventId, updateRequest);
+
+        verify(eventRepository, times(1))
+                .updateEvent(eventArgumentCaptor.capture());
+
+        assertThat(eventArgumentCaptor.getValue().getDescription(), equalTo(updateRequest.getDescription()));
+    }
+
+    @Test
+    void updateEventByAdmin_whenUpdateCategoryNotNullAndExist_thenUpdatedFieldPassedToRepository() {
+        Long eventId = 0L;
+        int categoryId = 1;
+        Category category = TestDataProvider.getValidCategoryToSave();
+        category.setId(categoryId);
+        UpdateEventAdminRequest updateRequest = new UpdateEventAdminRequest();
+        updateRequest.setCategory(categoryId);
+        Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        when(eventRepository.findEventById(eventId))
+                .thenReturn(Optional.of(updatedEvent));
+        when(categoryRepository.getCategoryById(categoryId))
+                .thenReturn(Optional.of(category));
+
+        eventService.updateEventByAdmin(eventId, updateRequest);
+
+        verify(eventRepository, times(1))
+                .updateEvent(eventArgumentCaptor.capture());
+
+        assertThat(eventArgumentCaptor.getValue().getCategory(), equalTo(category));
+    }
+
+    @Test
+    void updateEventByAdmin_whenUpdateCategoryNotNullAndNotExist_thenInvalidParamExceptionThrown() {
+        Long eventId = 0L;
+        int categoryId = 1;
+        UpdateEventAdminRequest updateRequest = new UpdateEventAdminRequest();
+        updateRequest.setCategory(categoryId);
+        Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        when(eventRepository.findEventById(eventId))
+                .thenReturn(Optional.of(updatedEvent));
+        when(categoryRepository.getCategoryById(categoryId))
+                .thenReturn(Optional.empty());
+
+        Executable executable = () -> eventService.updateEventByAdmin(eventId, updateRequest);
+
+        assertThrows(InvalidParamException.class, executable);
+    }
+
+    @Test
+    void updateEventByAdmin_whenUpdateEventDate_thenUpdatedFieldPassedToRepository() {
+        Long eventId = 0L;
+        UpdateEventAdminRequest updateRequest = new UpdateEventAdminRequest();
+        updateRequest.setEventDate(LocalDateTime.now().plusDays(1).withNano(0));
+        Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        when(eventRepository.findEventById(eventId))
+                .thenReturn(Optional.of(updatedEvent));
+
+        eventService.updateEventByAdmin(eventId, updateRequest);
+
+        verify(eventRepository, times(1))
+                .updateEvent(eventArgumentCaptor.capture());
+
+        assertThat(eventArgumentCaptor.getValue().getEventDate(), equalTo(updateRequest.getEventDate()));
+    }
+
+    @Test
+    void updateEventByAdmin_whenUpdateEventDateAndNotValid_thenForbiddenExceptionThrown() {
+        Long eventId = 0L;
+        UpdateEventAdminRequest updateRequest = new UpdateEventAdminRequest();
+        updateRequest.setEventDate(LocalDateTime.now().plusMinutes(1).withNano(0));
+        Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        when(eventRepository.findEventById(eventId))
+                .thenReturn(Optional.of(updatedEvent));
+
+        Executable executable = () -> eventService.updateEventByAdmin(eventId, updateRequest);
+
+        assertThrows(ForbiddenException.class, executable);
+    }
+
+    @Test
+    void updateEventByAdmin_whenUpdatePaid_thenUpdatedFieldPassedToRepository() {
+        Long eventId = 0L;
+        Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        updatedEvent.setPaid(false);
+        UpdateEventAdminRequest updateRequest = new UpdateEventAdminRequest();
+        updateRequest.setPaid(true);
+        when(eventRepository.findEventById(eventId))
+                .thenReturn(Optional.of(updatedEvent));
+
+        eventService.updateEventByAdmin(eventId, updateRequest);
+
+        verify(eventRepository, times(1))
+                .updateEvent(eventArgumentCaptor.capture());
+
+        assertThat(eventArgumentCaptor.getValue().isPaid(), equalTo(updateRequest.getPaid()));
+    }
+
+    @Test
+    void updateEventByAdmin_whenUpdateLocation_thenUpdatedFieldPassedToRepository() {
+        Long eventId = 0L;
+        Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        UpdateEventAdminRequest updateRequest = new UpdateEventAdminRequest();
+        updateRequest.setLocation(new Location(333.222f, 777.333f));
+        when(eventRepository.findEventById(eventId))
+                .thenReturn(Optional.of(updatedEvent));
+
+        eventService.updateEventByAdmin(eventId, updateRequest);
+
+        verify(eventRepository, times(1))
+                .updateEvent(eventArgumentCaptor.capture());
+
+        assertThat(eventArgumentCaptor.getValue().getLocation(), equalTo(updateRequest.getLocation()));
+    }
+
+    @Test
+    void updateEventByAdmin_whenUpdateRequestModeration_thenUpdatedFieldPassedToRepository() {
+        Long eventId = 0L;
+        Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        updatedEvent.setRequestModeration(false);
+        UpdateEventAdminRequest updateRequest = new UpdateEventAdminRequest();
+        updateRequest.setRequestModeration(true);
+        when(eventRepository.findEventById(eventId))
+                .thenReturn(Optional.of(updatedEvent));
+
+        eventService.updateEventByAdmin(eventId, updateRequest);
+
+        verify(eventRepository, times(1))
+                .updateEvent(eventArgumentCaptor.capture());
+
+        assertThat(eventArgumentCaptor.getValue().isRequestModeration(), equalTo(updateRequest.getRequestModeration()));
+    }
+
+    @Test
+    void updateEventByAdmin_whenUpdateParticipantLimit_thenUpdatedFieldPassedToRepository() {
+        Long eventId = 0L;
+        Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        updatedEvent.setParticipantLimit(0);
+        UpdateEventAdminRequest updateRequest = new UpdateEventAdminRequest();
+        updateRequest.setParticipantLimit(100);
+        when(eventRepository.findEventById(eventId))
+                .thenReturn(Optional.of(updatedEvent));
+
+        eventService.updateEventByAdmin(eventId, updateRequest);
+
+        verify(eventRepository, times(1))
+                .updateEvent(eventArgumentCaptor.capture());
+
+        assertThat(eventArgumentCaptor.getValue().getParticipantLimit(), equalTo(updateRequest.getParticipantLimit()));
+    }
+
+    @Test
+    void updateEventByAdmin_whenUpdateStateAndActionIsReject_thenCanceledStatePassedToRepository() {
+        Long eventId = 0L;
+        Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        updatedEvent.setState(EventState.PENDING);
+        UpdateEventAdminRequest updateRequest = new UpdateEventAdminRequest();
+        updateRequest.setStateAction(AdminRequestStateAction.REJECT_EVENT);
+        when(eventRepository.findEventById(eventId))
+                .thenReturn(Optional.of(updatedEvent));
+
+        eventService.updateEventByAdmin(eventId, updateRequest);
+
+        verify(eventRepository, times(1))
+                .updateEvent(eventArgumentCaptor.capture());
+
+        assertThat(eventArgumentCaptor.getValue().getState(), equalTo(EventState.CANCELED));
+    }
+
+    @Test
+    void updateEventByAdmin_whenUpdateStateAndActionIsPublish_thenPublishedStateAndPublishDatePassedToRepository() {
+        Long eventId = 0L;
+        Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        updatedEvent.setState(EventState.PENDING);
+        UpdateEventAdminRequest updateRequest = new UpdateEventAdminRequest();
+        updateRequest.setStateAction(AdminRequestStateAction.PUBLISH_EVENT);
+        when(eventRepository.findEventById(eventId))
+                .thenReturn(Optional.of(updatedEvent));
+
+        eventService.updateEventByAdmin(eventId, updateRequest);
+
+        verify(eventRepository, times(1))
+                .updateEvent(eventArgumentCaptor.capture());
+
+        assertThat(eventArgumentCaptor.getValue().getState(), equalTo(EventState.PUBLISHED));
+        assertThat(eventArgumentCaptor.getValue().getPublishedOn(),
+                equalTo(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)));
+    }
+
+    @Test
+    void updateEventByAdmin_whenEventFound_thenParamsPassedToStatisticClient() {
+        Long eventId = 1L;
+        UpdateEventAdminRequest updateRequest = new UpdateEventAdminRequest();
+        Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        foundEvent.setId(eventId);
+        when(eventRepository.findEventById(eventId))
+                .thenReturn(Optional.of(foundEvent));
+
+        eventService.updateEventByAdmin(eventId, updateRequest);
+
+        verify(statisticClient, times(1))
+                .getViewStats(
+                        startArgumentCaptor.capture(),
+                        endArgumentCaptor.capture(),
+                        urisArgumentCaptor.capture(),
+                        uniqueArgumentCaptor.capture()
+                );
+        assertThat(startArgumentCaptor.getValue(), equalTo(foundEvent.getCreatedOn()));
+        assertThat(endArgumentCaptor.getValue(), equalTo(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)));
+        assertThat(urisArgumentCaptor.getValue().get(0), equalTo(String.format("/events/%d", eventId)));
+        assertThat(uniqueArgumentCaptor.getValue(), equalTo(true));
+    }
+
+    @Test
+    void updateEventByAdmin_whenViewsFound_thenAddedToDto() {
+        Long eventId = 1L;
+        Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        foundEvent.setId(eventId);
+        UpdateEventAdminRequest updateRequest = new UpdateEventAdminRequest();
+        ViewStatsDto viewStatsDto = ViewStatsDto.builder()
+                .app("app")
+                .uri(String.format("/events/%d", eventId))
+                .hits(10L)
+                .build();
+        when(eventRepository.findEventById(eventId))
+                .thenReturn(Optional.of(foundEvent));
+        when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
+                .thenReturn(List.of(viewStatsDto));
+        try (MockedStatic<EventMapper> eventMapperMock = Mockito.mockStatic(EventMapper.class)) {
+            eventMapperMock.when(() -> EventMapper.mapToShortDto(foundEvent))
+                    .thenReturn(TestDataProvider.getValidShortDto(foundEvent.getId()));
+        }
+
+        EventFullDto foundEventDto = eventService.updateEventByAdmin(eventId, updateRequest);
+
+        assertThat(foundEventDto.getViews(), equalTo(10L));
+    }
+
+    @Test
+    void updateEventByAdmin_whenViewsNotFround_thenZeroViewsAddedToDto() {
+        Long eventId = 1L;
+        Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        foundEvent.setId(eventId);
+        UpdateEventAdminRequest updateRequest = new UpdateEventAdminRequest();
+        ViewStatsDto viewStatsDto = ViewStatsDto.builder()
+                .app("app")
+                .uri("/events/999")
+                .hits(10L)
+                .build();
+        when(eventRepository.findEventById(eventId))
+                .thenReturn(Optional.of(foundEvent));
+        when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
+                .thenReturn(List.of(viewStatsDto));
+        try (MockedStatic<EventMapper> eventMapperMock = Mockito.mockStatic(EventMapper.class)) {
+            eventMapperMock.when(() -> EventMapper.mapToShortDto(foundEvent))
+                    .thenReturn(TestDataProvider.getValidShortDto(foundEvent.getId()));
+        }
+
+        EventFullDto foundEventDto = eventService.updateEventByAdmin(eventId, updateRequest);
 
         assertThat(foundEventDto.getViews(), equalTo(0L));
     }

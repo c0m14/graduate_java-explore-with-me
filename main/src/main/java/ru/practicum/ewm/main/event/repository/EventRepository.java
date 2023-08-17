@@ -1,6 +1,7 @@
 package ru.practicum.ewm.main.event.repository;
 
-import ru.practicum.ewm.main.event.dto.SearchEventParamsDto;
+import ru.practicum.ewm.main.event.dto.searchRequest.AdminSearchParamsDto;
+import ru.practicum.ewm.main.event.dto.searchRequest.PublicSearchParamsDto;
 import ru.practicum.ewm.main.event.model.Event;
 import ru.practicum.ewm.main.event.model.EventState;
 
@@ -10,13 +11,17 @@ import java.util.Optional;
 public interface EventRepository {
     void updateEvent(Event event);
 
-    Optional<Event> getByInitiatorIdAndEventId(Long userId, Long eventId);
+    Optional<Event> findEventByInitiatorIdAndEventId(Long userId, Long eventId);
 
     List<Event> getUsersEvents(Long userId, int offset, int size);
 
     Event save(Event event);
 
-    List<Event> findEvents(SearchEventParamsDto searchParams);
+    List<Event> findEventsPublic(PublicSearchParamsDto searchParams);
+
+    List<Event> findEventsAdmin(AdminSearchParamsDto searchParams);
 
     Optional<Event> findEventByIdAndState(Long eventId, EventState state);
+
+    Optional<Event> findEventById(Long eventId);
 }

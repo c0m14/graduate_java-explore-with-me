@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import ru.practicum.ewm.main.event.dto.EventFullDto;
 import ru.practicum.ewm.main.event.dto.EventShortDto;
-import ru.practicum.ewm.main.event.dto.SearchEventParamsDto;
-import ru.practicum.ewm.main.event.dto.SearchSortOptionDto;
+import ru.practicum.ewm.main.event.dto.searchRequest.PublicSearchParamsDto;
+import ru.practicum.ewm.main.event.dto.searchRequest.SearchSortOptionDto;
 import ru.practicum.ewm.main.event.service.EventService;
 import ru.practicum.ewm.main.exception.InvalidParamException;
 import ru.practicum.ewm.statistic.dto.Formats;
@@ -39,19 +39,22 @@ public class PublicEventController {
             @RequestParam(name = "rangeEnd", required = false)
             @DateTimeFormat(pattern = Formats.DATE_TIME_PATTERN) LocalDateTime rangeEnd,
 
-            @RequestParam(name = "onlyAvailable", required = false) Boolean onlyAvailable,
+            @RequestParam(name = "onlyAvailable", required = false, defaultValue = "false") Boolean onlyAvailable,
             @RequestParam(name = "sort", required = false) String sort,
-            @RequestParam(name = "from", required = false) Integer from,
-            @RequestParam(name = "size", required = false) Integer size,
+            @RequestParam(name = "from", required = false, defaultValue = "0") Integer from,
+            @RequestParam(name = "size", required = false, defaultValue = "10") Integer size,
             HttpServletRequest httpServletRequest
     ) {
         log.info("Start GET /events with text: {}, categories: {}, paid: {}, rangeStart: {}, rangeEnd: {}," +
                         "onlyAvailable: {}, sort: {}, from: {}, size: {}, ip: {}",
                 text, categoriesIds, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size,
                 httpServletRequest.getRemoteAddr());
-        SearchSortOptionDto sortOption = SearchSortOptionDto.from(sort)
-                .orElseThrow(() -> new InvalidParamException("Event sort option", "Unknown state: " + sort));
-        SearchEventParamsDto searchParams = SearchEventParamsDto.builder()
+        SearchSortOptionDto sortOption = null;
+        if (sort != null) {
+            sortOption = SearchSortOptionDto.from(sort)
+                    .orElseThrow(() -> new InvalidParamException("Event sort option", "Unknown state: " + sort));
+        }
+        PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder()
                 .text(text)
                 .categoriesIds(categoriesIds)
                 .paid(paid)

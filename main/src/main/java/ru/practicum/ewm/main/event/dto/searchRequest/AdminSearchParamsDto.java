@@ -1,4 +1,4 @@
-package ru.practicum.ewm.main.event.dto;
+package ru.practicum.ewm.main.event.dto.searchRequest;
 
 import lombok.Builder;
 import lombok.Data;
@@ -9,16 +9,12 @@ import java.util.Set;
 
 @Data
 @Builder
-public class SearchEventParamsDto {
-
-    String text;
+public class AdminSearchParamsDto {
+    Set<Long> usersIds;
+    Set<EventState> states;
     Set<Integer> categoriesIds;
-    Boolean paid;
     LocalDateTime rangeStart;
     LocalDateTime rangeEnd;
-    Boolean onlyAvailable;
-    SearchSortOptionDto sortOption;
     Integer from;
     Integer size;
-    EventState state;
 }

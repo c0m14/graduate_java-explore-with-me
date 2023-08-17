@@ -8,8 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.ewm.main.event.dto.SearchEventParamsDto;
-import ru.practicum.ewm.main.event.dto.SearchSortOptionDto;
+import ru.practicum.ewm.main.event.dto.searchRequest.PublicSearchParamsDto;
+import ru.practicum.ewm.main.event.dto.searchRequest.SearchSortOptionDto;
 import ru.practicum.ewm.main.event.service.EventService;
 import ru.practicum.ewm.statistic.dto.Formats;
 
@@ -34,7 +34,7 @@ class PublicEventControllerTest {
     private EventService eventService;
     private DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Formats.DATE_TIME_PATTERN);
     @Captor
-    private ArgumentCaptor<SearchEventParamsDto> searchParamsArgumentCaptor;
+    private ArgumentCaptor<PublicSearchParamsDto> searchParamsArgumentCaptor;
     @Captor
     private ArgumentCaptor<Long> eventIdArgumentCaptor;
 

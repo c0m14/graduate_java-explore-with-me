@@ -8,8 +8,9 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Component;
 import ru.practicum.ewm.main.category.model.Category;
-import ru.practicum.ewm.main.event.dto.SearchEventParamsDto;
-import ru.practicum.ewm.main.event.dto.SearchSortOptionDto;
+import ru.practicum.ewm.main.event.dto.searchRequest.AdminSearchParamsDto;
+import ru.practicum.ewm.main.event.dto.searchRequest.PublicSearchParamsDto;
+import ru.practicum.ewm.main.event.dto.searchRequest.SearchSortOptionDto;
 import ru.practicum.ewm.main.event.model.Event;
 import ru.practicum.ewm.main.event.model.EventState;
 import ru.practicum.ewm.main.event.model.Location;
@@ -21,6 +22,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -67,7 +70,7 @@ public class EventRepositoryJDBCImpl implements EventRepository {
     }
 
     @Override
-    public Optional<Event> getByInitiatorIdAndEventId(Long userId, Long eventId) {
+    public Optional<Event> findEventByInitiatorIdAndEventId(Long userId, Long eventId) {
         String query = "SELECT e.event_id, e.title, e.annotation, e.description, e.category_id, e.event_date, " +
                 "e.initiator_id, e.paid, e.latitude, e.longitude, e.participant_limit, e.request_moderation, e.created_on, " +
                 "e.published_on, e.state, " +
@@ -95,7 +98,7 @@ public class EventRepositoryJDBCImpl implements EventRepository {
                 "SET title = :title, annotation = :annotation, description = :description, " +
                 "category_id = :categoryId, event_date = :eventDate, paid = :paid, latitude = :latitude, " +
                 "longitude = :longitude, request_moderation = :requestModeration, state = :state, " +
-                "participant_limit = :participantLimit " +
+                "participant_limit = :participantLimit, published_on = :publishedOn " +
                 "WHERE event_id = :eventId";
         SqlParameterSource namedParams = new MapSqlParameterSource()
                 .addValue("title", event.getTitle())
@@ -109,23 +112,16 @@ public class EventRepositoryJDBCImpl implements EventRepository {
                 .addValue("requestModeration", event.isRequestModeration())
                 .addValue("state", event.getState().toString())
                 .addValue("participantLimit", event.getParticipantLimit())
-                .addValue("eventId", event.getId());
+                .addValue("eventId", event.getId())
+                .addValue("publishedOn", event.getPublishedOn());
 
         jdbcTemplate.update(query, namedParams);
 
     }
 
     @Override
-    public List<Event> findEvents(SearchEventParamsDto searchParams) {
-        StringBuilder queryBuilder = new StringBuilder();
-        queryBuilder.append("SELECT e.event_id, e.title, e.annotation, e.description, e.category_id, e.event_date, ");
-        queryBuilder.append("e.initiator_id, e.paid, e.latitude, e.longitude, e.participant_limit, ");
-        queryBuilder.append("e.request_moderation, e.created_on, e.published_on, e.state, e.published_on, e.state, ");
-        queryBuilder.append("c.category_id, c.category_name, ");
-        queryBuilder.append("u.user_id, u.user_name ");
-        queryBuilder.append("FROM event AS e ");
-        queryBuilder.append("INNER JOIN category AS c ON e.category_id = c.category_id ");
-        queryBuilder.append("INNER JOIN users AS u ON e.initiator_id = u.user_id ");
+    public List<Event> findEventsPublic(PublicSearchParamsDto searchParams) {
+        StringBuilder queryBuilder = getStandardSelectEventQueryBuilder();
         queryBuilder.append("WHERE e.state = :state ");
         queryBuilder.append("AND e.event_date > :start ");
         if (searchParams.getRangeEnd() != null) {
@@ -191,6 +187,67 @@ public class EventRepositoryJDBCImpl implements EventRepository {
         }
     }
 
+    @Override
+    public List<Event> findEventsAdmin(AdminSearchParamsDto searchParams) {
+        StringBuilder queryBuilder = getStandardSelectEventQueryBuilder();
+        if (hasWhereBlock(searchParams)) {
+            queryBuilder.append("WHERE 1=1 ");
+            if (searchParams.getUsersIds() != null && !searchParams.getUsersIds().isEmpty()) {
+                queryBuilder.append("AND e.initiator_id IN (:userIds) ");
+            }
+            if (searchParams.getCategoriesIds() != null && !searchParams.getCategoriesIds().isEmpty()) {
+                queryBuilder.append("AND e.category_id IN (:categoriesIds) ");
+            }
+            if (searchParams.getStates() != null && !searchParams.getStates().isEmpty()) {
+                queryBuilder.append("AND e.state IN (:states) ");
+            }
+            if (searchParams.getRangeStart() != null) {
+                queryBuilder.append("AND e.event_date > :start ");
+            }
+            if (searchParams.getRangeEnd() != null) {
+                queryBuilder.append("AND e.event_date < :end ");
+            }
+        }
+        queryBuilder.append("ORDER BY e.event_date ASC ");
+        queryBuilder.append("OFFSET :offset ROWS ");
+        queryBuilder.append("FETCH NEXT :size ROWS ONLY");
+
+        SqlParameterSource namedParams = new MapSqlParameterSource()
+                .addValue("userIds", searchParams.getUsersIds())
+                .addValue("categoriesIds", searchParams.getCategoriesIds())
+                .addValue("states", mapEventStatesToString(searchParams.getStates()))
+                .addValue("start", searchParams.getRangeStart())
+                .addValue("end", searchParams.getRangeEnd())
+                .addValue("offset", searchParams.getFrom())
+                .addValue("size", searchParams.getSize());
+
+        try {
+            return jdbcTemplate.query(queryBuilder.toString(), namedParams, this::mapRowToEventFull);
+        } catch (EmptyResultDataAccessException e) {
+            return List.of();
+        }
+    }
+
+    @Override
+    public Optional<Event> findEventById(Long eventId) {
+        String query = "SELECT e.event_id, e.title, e.annotation, e.description, e.category_id, e.event_date, " +
+                "e.initiator_id, e.paid, e.latitude, e.longitude, e.participant_limit, e.request_moderation, e.created_on, " +
+                "e.published_on, e.state, " +
+                "c.category_id, c.category_name, " +
+                "u.user_id, u.user_name " +
+                "FROM event AS e " +
+                "INNER JOIN category AS c ON e.category_id = c.category_id " +
+                "INNER JOIN users AS u ON e.initiator_id = u.user_id " +
+                "WHERE e.event_id = :eventId ";
+        SqlParameterSource namedParams = new MapSqlParameterSource("eventId", eventId);
+
+        try {
+            return Optional.of(jdbcTemplate.queryForObject(query, namedParams, this::mapRowToEventFull));
+        } catch (EmptyResultDataAccessException e) {
+            return Optional.empty();
+        }
+    }
+
     private Event mapRowToEventShort(ResultSet resultSet, int rowNum) throws SQLException {
         return getEventBuilderWithBaseFields(resultSet, rowNum).build();
     }
@@ -224,7 +281,39 @@ public class EventRepositoryJDBCImpl implements EventRepository {
                 .requestModeration(resultSet.getBoolean("request_moderation"))
                 .createdOn(LocalDateTime.parse(resultSet.getString("created_on"), formatter))
                 .publishedOn(resultSet.getString("published_on") == null ?
-                        null : LocalDateTime.parse(resultSet.getString("published_on")))
+                        null : LocalDateTime.parse(resultSet.getString("published_on"), formatter))
                 .state(null);
+    }
+
+    private boolean hasWhereBlock(AdminSearchParamsDto searchParams) {
+        return searchParams.getUsersIds() != null ||
+                searchParams.getCategoriesIds() != null ||
+                searchParams.getStates() != null ||
+                searchParams.getRangeStart() != null ||
+                searchParams.getRangeEnd() != null;
+
+    }
+
+    private StringBuilder getStandardSelectEventQueryBuilder() {
+        StringBuilder queryBuilder = new StringBuilder();
+        queryBuilder.append("SELECT e.event_id, e.title, e.annotation, e.description, e.category_id, e.event_date, ");
+        queryBuilder.append("e.initiator_id, e.paid, e.latitude, e.longitude, e.participant_limit, ");
+        queryBuilder.append("e.request_moderation, e.created_on, e.published_on, e.state, e.published_on, e.state, ");
+        queryBuilder.append("c.category_id, c.category_name, ");
+        queryBuilder.append("u.user_id, u.user_name ");
+        queryBuilder.append("FROM event AS e ");
+        queryBuilder.append("INNER JOIN category AS c ON e.category_id = c.category_id ");
+        queryBuilder.append("INNER JOIN users AS u ON e.initiator_id = u.user_id ");
+        return queryBuilder;
+    }
+
+    private List<String> mapEventStatesToString(Set<EventState> eventStates) {
+        if (eventStates != null) {
+            return eventStates.stream()
+                    .map(Enum::toString)
+                    .collect(Collectors.toList());
+        } else {
+            return null;
+        }
     }
 }

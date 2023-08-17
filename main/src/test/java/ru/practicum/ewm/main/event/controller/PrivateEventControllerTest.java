@@ -12,7 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.ewm.main.TestDataProvider;
 import ru.practicum.ewm.main.event.dto.NewEventDto;
-import ru.practicum.ewm.main.event.dto.UpdateEventUserRequest;
+import ru.practicum.ewm.main.event.dto.updateRequest.UpdateEventUserRequest;
 import ru.practicum.ewm.main.event.service.EventService;
 
 import java.time.LocalDateTime;
@@ -416,7 +416,7 @@ class PrivateEventControllerTest {
     void updateEventByOwner_whenInvoked_thenStatusIsOkAndParamsPassedToService() {
         Long userId = 1L;
         Long eventId = 2L;
-        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventRequest();
+        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventUserRequest();
 
         mvc.perform(patch("/users/{userId}/events/{eventId}", userId, eventId)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -424,7 +424,7 @@ class PrivateEventControllerTest {
                 .andExpect(status().isOk());
 
         verify(eventService, times(1))
-                .updateEvent(
+                .updateEventByUser(
                         userIdArgumentCaptor.capture(),
                         eventIdArgumentCaptor.capture(),
                         updateRequestArgumentCaptor.capture()
@@ -439,7 +439,7 @@ class PrivateEventControllerTest {
     void updateEventByOwner_whenTitleIsNull_thenStatusIsOkAndParamsPassedToService() {
         Long userId = 1L;
         Long eventId = 2L;
-        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventRequest();
+        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventUserRequest();
         updateRequest.setTitle(null);
 
         mvc.perform(patch("/users/{userId}/events/{eventId}", userId, eventId)
@@ -448,7 +448,7 @@ class PrivateEventControllerTest {
                 .andExpect(status().isOk());
 
         verify(eventService, times(1))
-                .updateEvent(
+                .updateEventByUser(
                         userIdArgumentCaptor.capture(),
                         eventIdArgumentCaptor.capture(),
                         updateRequestArgumentCaptor.capture()
@@ -463,7 +463,7 @@ class PrivateEventControllerTest {
     void updateEventByOwner_whenAnnotationIsNull_thenStatusIsOkAndParamsPassedToService() {
         Long userId = 1L;
         Long eventId = 2L;
-        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventRequest();
+        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventUserRequest();
         updateRequest.setAnnotation(null);
 
         mvc.perform(patch("/users/{userId}/events/{eventId}", userId, eventId)
@@ -472,7 +472,7 @@ class PrivateEventControllerTest {
                 .andExpect(status().isOk());
 
         verify(eventService, times(1))
-                .updateEvent(
+                .updateEventByUser(
                         userIdArgumentCaptor.capture(),
                         eventIdArgumentCaptor.capture(),
                         updateRequestArgumentCaptor.capture()
@@ -487,7 +487,7 @@ class PrivateEventControllerTest {
     void updateEventByOwner_whenDescriptionIsNull_thenStatusIsOkAndParamsPassedToService() {
         Long userId = 1L;
         Long eventId = 2L;
-        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventRequest();
+        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventUserRequest();
         updateRequest.setDescription(null);
 
         mvc.perform(patch("/users/{userId}/events/{eventId}", userId, eventId)
@@ -496,7 +496,7 @@ class PrivateEventControllerTest {
                 .andExpect(status().isOk());
 
         verify(eventService, times(1))
-                .updateEvent(
+                .updateEventByUser(
                         userIdArgumentCaptor.capture(),
                         eventIdArgumentCaptor.capture(),
                         updateRequestArgumentCaptor.capture()
@@ -511,7 +511,7 @@ class PrivateEventControllerTest {
     void updateEventByOwner_whenCategoryIsNull_thenStatusIsOkAndParamsPassedToService() {
         Long userId = 1L;
         Long eventId = 2L;
-        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventRequest();
+        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventUserRequest();
         updateRequest.setCategory(null);
 
         mvc.perform(patch("/users/{userId}/events/{eventId}", userId, eventId)
@@ -520,7 +520,7 @@ class PrivateEventControllerTest {
                 .andExpect(status().isOk());
 
         verify(eventService, times(1))
-                .updateEvent(
+                .updateEventByUser(
                         userIdArgumentCaptor.capture(),
                         eventIdArgumentCaptor.capture(),
                         updateRequestArgumentCaptor.capture()
@@ -535,7 +535,7 @@ class PrivateEventControllerTest {
     void updateEventByOwner_whenEventDateIsNull_thenStatusIsOkAndParamsPassedToService() {
         Long userId = 1L;
         Long eventId = 2L;
-        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventRequest();
+        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventUserRequest();
         updateRequest.setEventDate(null);
 
         mvc.perform(patch("/users/{userId}/events/{eventId}", userId, eventId)
@@ -544,7 +544,7 @@ class PrivateEventControllerTest {
                 .andExpect(status().isOk());
 
         verify(eventService, times(1))
-                .updateEvent(
+                .updateEventByUser(
                         userIdArgumentCaptor.capture(),
                         eventIdArgumentCaptor.capture(),
                         updateRequestArgumentCaptor.capture()
@@ -559,7 +559,7 @@ class PrivateEventControllerTest {
     void updateEventByOwner_whenPaidIsNull_thenStatusIsOkAndParamsPassedToService() {
         Long userId = 1L;
         Long eventId = 2L;
-        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventRequest();
+        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventUserRequest();
         updateRequest.setPaid(null);
 
         mvc.perform(patch("/users/{userId}/events/{eventId}", userId, eventId)
@@ -568,7 +568,7 @@ class PrivateEventControllerTest {
                 .andExpect(status().isOk());
 
         verify(eventService, times(1))
-                .updateEvent(
+                .updateEventByUser(
                         userIdArgumentCaptor.capture(),
                         eventIdArgumentCaptor.capture(),
                         updateRequestArgumentCaptor.capture()
@@ -583,7 +583,7 @@ class PrivateEventControllerTest {
     void updateEventByOwner_whenLocationIsNull_thenStatusIsOkAndParamsPassedToService() {
         Long userId = 1L;
         Long eventId = 2L;
-        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventRequest();
+        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventUserRequest();
         updateRequest.setLocation(null);
 
         mvc.perform(patch("/users/{userId}/events/{eventId}", userId, eventId)
@@ -592,7 +592,7 @@ class PrivateEventControllerTest {
                 .andExpect(status().isOk());
 
         verify(eventService, times(1))
-                .updateEvent(
+                .updateEventByUser(
                         userIdArgumentCaptor.capture(),
                         eventIdArgumentCaptor.capture(),
                         updateRequestArgumentCaptor.capture()
@@ -607,7 +607,7 @@ class PrivateEventControllerTest {
     void updateEventByOwner_whenRequestModerationIsNull_thenStatusIsOkAndParamsPassedToService() {
         Long userId = 1L;
         Long eventId = 2L;
-        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventRequest();
+        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventUserRequest();
         updateRequest.setTitle(null);
 
         mvc.perform(patch("/users/{userId}/events/{eventId}", userId, eventId)
@@ -616,7 +616,7 @@ class PrivateEventControllerTest {
                 .andExpect(status().isOk());
 
         verify(eventService, times(1))
-                .updateEvent(
+                .updateEventByUser(
                         userIdArgumentCaptor.capture(),
                         eventIdArgumentCaptor.capture(),
                         updateRequestArgumentCaptor.capture()
@@ -631,7 +631,7 @@ class PrivateEventControllerTest {
     void updateEventByOwner_whenStateActionIsNull_thenStatusIsOkAndParamsPassedToService() {
         Long userId = 1L;
         Long eventId = 2L;
-        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventRequest();
+        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventUserRequest();
         updateRequest.setStateAction(null);
 
         mvc.perform(patch("/users/{userId}/events/{eventId}", userId, eventId)
@@ -640,7 +640,7 @@ class PrivateEventControllerTest {
                 .andExpect(status().isOk());
 
         verify(eventService, times(1))
-                .updateEvent(
+                .updateEventByUser(
                         userIdArgumentCaptor.capture(),
                         eventIdArgumentCaptor.capture(),
                         updateRequestArgumentCaptor.capture()
@@ -655,7 +655,7 @@ class PrivateEventControllerTest {
     void updateEventByOwner_whenTitleIsLessThan3_thenStatusIsBadRequest() {
         Long userId = 1L;
         Long eventId = 2L;
-        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventRequest();
+        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventUserRequest();
         updateRequest.setTitle("t".repeat(2));
 
         mvc.perform(patch("/users/{userId}/events/{eventId}", userId, eventId)
@@ -669,7 +669,7 @@ class PrivateEventControllerTest {
     void updateEventByOwner_whenTitleIsMoreThan120_thenStatusIsBadRequest() {
         Long userId = 1L;
         Long eventId = 2L;
-        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventRequest();
+        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventUserRequest();
         updateRequest.setTitle("t".repeat(121));
 
         mvc.perform(patch("/users/{userId}/events/{eventId}", userId, eventId)
@@ -683,7 +683,7 @@ class PrivateEventControllerTest {
     void updateEventByOwner_whenTitleIsBlank_thenStatusIsBadRequest() {
         Long userId = 1L;
         Long eventId = 2L;
-        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventRequest();
+        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventUserRequest();
         updateRequest.setTitle(" ".repeat(5));
 
         mvc.perform(patch("/users/{userId}/events/{eventId}", userId, eventId)
@@ -697,7 +697,7 @@ class PrivateEventControllerTest {
     void updateEventByOwner_whenAnnotationIsBlank_thenStatusIsBadRequest() {
         Long userId = 1L;
         Long eventId = 2L;
-        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventRequest();
+        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventUserRequest();
         updateRequest.setAnnotation(" ".repeat(5));
 
         mvc.perform(patch("/users/{userId}/events/{eventId}", userId, eventId)
@@ -711,7 +711,7 @@ class PrivateEventControllerTest {
     void updateEventByOwner_whenAnnotationIsLessThan20_thenStatusIsBadRequest() {
         Long userId = 1L;
         Long eventId = 2L;
-        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventRequest();
+        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventUserRequest();
         updateRequest.setAnnotation("a".repeat(19));
 
         mvc.perform(patch("/users/{userId}/events/{eventId}", userId, eventId)
@@ -725,7 +725,7 @@ class PrivateEventControllerTest {
     void updateEventByOwner_whenAnnotationIsMoreThan2000_thenStatusIsBadRequest() {
         Long userId = 1L;
         Long eventId = 2L;
-        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventRequest();
+        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventUserRequest();
         updateRequest.setAnnotation("a".repeat(2001));
 
         mvc.perform(patch("/users/{userId}/events/{eventId}", userId, eventId)
@@ -739,7 +739,7 @@ class PrivateEventControllerTest {
     void updateEventByOwner_whenDescriptionIsBlank_thenStatusIsBadRequest() {
         Long userId = 1L;
         Long eventId = 2L;
-        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventRequest();
+        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventUserRequest();
         updateRequest.setDescription(" ".repeat(5));
 
         mvc.perform(patch("/users/{userId}/events/{eventId}", userId, eventId)
@@ -753,7 +753,7 @@ class PrivateEventControllerTest {
     void updateEventByOwner_whenDescriptionIsMoreThan7000_thenStatusIsBadRequest() {
         Long userId = 1L;
         Long eventId = 2L;
-        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventRequest();
+        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventUserRequest();
         updateRequest.setDescription("d".repeat(7001));
 
         mvc.perform(patch("/users/{userId}/events/{eventId}", userId, eventId)
@@ -767,7 +767,7 @@ class PrivateEventControllerTest {
     void updateEventByOwner_whenEventDateNotInFuture_thenStatusIsBadRequest() {
         Long userId = 1L;
         Long eventId = 2L;
-        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventRequest();
+        UpdateEventUserRequest updateRequest = TestDataProvider.getValidUpdateEventUserRequest();
         updateRequest.setEventDate(LocalDateTime.now().withNano(0));
 
         mvc.perform(patch("/users/{userId}/events/{eventId}", userId, eventId)

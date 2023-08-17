@@ -3,7 +3,13 @@ package ru.practicum.ewm.main;
 import lombok.experimental.UtilityClass;
 import ru.practicum.ewm.main.category.dto.CategoryDto;
 import ru.practicum.ewm.main.category.model.Category;
-import ru.practicum.ewm.main.event.dto.*;
+import ru.practicum.ewm.main.event.dto.EventFullDto;
+import ru.practicum.ewm.main.event.dto.EventShortDto;
+import ru.practicum.ewm.main.event.dto.NewEventDto;
+import ru.practicum.ewm.main.event.dto.updateRequest.AdminRequestStateAction;
+import ru.practicum.ewm.main.event.dto.updateRequest.UpdateEventAdminRequest;
+import ru.practicum.ewm.main.event.dto.updateRequest.UpdateEventUserRequest;
+import ru.practicum.ewm.main.event.dto.updateRequest.UserRequestStateAction;
 import ru.practicum.ewm.main.event.model.Event;
 import ru.practicum.ewm.main.event.model.EventState;
 import ru.practicum.ewm.main.event.model.Location;
@@ -104,7 +110,7 @@ public class TestDataProvider {
                 .build();
     }
 
-    public UpdateEventUserRequest getValidUpdateEventRequest() {
+    public UpdateEventUserRequest getValidUpdateEventUserRequest() {
         return UpdateEventUserRequest.builder()
                 .title("title")
                 .annotation("annotation".repeat(10))
@@ -114,7 +120,7 @@ public class TestDataProvider {
                 .paid(true)
                 .location(new Location(123.123f, 124.124f))
                 .requestModeration(true)
-                .stateAction(StateAction.SEND_TO_REVIEW)
+                .stateAction(UserRequestStateAction.SEND_TO_REVIEW)
                 .build();
     }
 
@@ -133,6 +139,20 @@ public class TestDataProvider {
                 .initiator(new UserShortDto())
                 .paid(true)
                 .state(EventState.PUBLISHED)
+                .build();
+    }
+
+    public UpdateEventAdminRequest getValidUpdateEventAdminRequest() {
+        return UpdateEventAdminRequest.builder()
+                .title("title")
+                .annotation("annotation".repeat(10))
+                .description("description".repeat(10))
+                .category(0)
+                .eventDate(LocalDateTime.now().plusDays(1).withNano(0))
+                .paid(true)
+                .location(new Location(123.123f, 124.124f))
+                .requestModeration(true)
+                .stateAction(AdminRequestStateAction.PUBLISH_EVENT)
                 .build();
     }
 }

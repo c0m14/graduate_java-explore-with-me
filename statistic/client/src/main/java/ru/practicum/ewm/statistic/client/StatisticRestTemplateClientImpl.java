@@ -50,14 +50,6 @@ public class StatisticRestTemplateClientImpl implements StatisticClient {
             LocalDateTime end,
             List<String> uris,
             boolean unique) {
-/*        String startToString = start.format(formatter);
-        String endToString = end.format(formatter);
-        String url = UriComponentsBuilder.fromPath(STATS_URI_PREFIX)
-                .queryParam("start", URLEncoder.encode(startToString, StandardCharsets.UTF_8))
-                .queryParam("end", URLEncoder.encode(endToString, StandardCharsets.UTF_8))
-                .queryParam("uris", uris)
-                .queryParam("unique", unique)
-                .toUriString();*/
         Map<String, Object> queryParams = Map.of(
                 "start", start.format(formatter),
                 "end", end.format(formatter),
