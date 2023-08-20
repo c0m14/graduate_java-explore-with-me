@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import ru.practicum.ewm.main.exception.InvalidParamException;
+import ru.practicum.ewm.main.exception.ForbiddenException;
 import ru.practicum.ewm.main.exception.NotExistsException;
 import ru.practicum.ewm.main.user.model.User;
 
@@ -31,7 +31,7 @@ class UserRepositoryTest {
     }
 
     @Test
-    void save_whenEmailExists_thenInvalidParamExceptionThrown() {
+    void save_whenEmailExists_thenForbiddenExceptionThrown() {
         User firstUser = new User();
         firstUser.setName("name");
         firstUser.setEmail("email@email.ru");
@@ -40,7 +40,7 @@ class UserRepositoryTest {
         secondUser.setEmail("email@email.ru");
         userRepository.save(firstUser);
 
-        assertThrows(InvalidParamException.class,
+        assertThrows(ForbiddenException.class,
                 () -> userRepository.save(secondUser));
     }
 

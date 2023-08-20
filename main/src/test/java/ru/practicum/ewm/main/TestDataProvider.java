@@ -3,6 +3,8 @@ package ru.practicum.ewm.main;
 import lombok.experimental.UtilityClass;
 import ru.practicum.ewm.main.category.dto.CategoryDto;
 import ru.practicum.ewm.main.category.model.Category;
+import ru.practicum.ewm.main.compilation.dto.NewCompilationDto;
+import ru.practicum.ewm.main.compilation.model.Compilation;
 import ru.practicum.ewm.main.event.dto.EventFullDto;
 import ru.practicum.ewm.main.event.dto.EventShortDto;
 import ru.practicum.ewm.main.event.dto.NewEventDto;
@@ -19,7 +21,9 @@ import ru.practicum.ewm.main.user.dto.UserShortDto;
 import ru.practicum.ewm.main.user.model.User;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 @UtilityClass
 public class TestDataProvider {
@@ -158,6 +162,14 @@ public class TestDataProvider {
                 .build();
     }
 
+    public NewCompilationDto getValidNewCompilationDto() {
+        return NewCompilationDto.builder()
+                .pinned(true)
+                .title("tittle")
+                .events(Set.of(0L))
+                .build();
+    }
+
     public EventParticipationRequest getValidRequestToSave(User user, Event event) {
         return EventParticipationRequest.builder()
                 .requester(user)
@@ -166,4 +178,13 @@ public class TestDataProvider {
                 .created(LocalDateTime.now().withNano(0))
                 .build();
     }
+
+    public Compilation getValidCompilationToSave(List<Event> events) {
+        return Compilation.builder()
+                .title("title")
+                .pinned(false)
+                .events(events)
+                .build();
+    }
+
 }

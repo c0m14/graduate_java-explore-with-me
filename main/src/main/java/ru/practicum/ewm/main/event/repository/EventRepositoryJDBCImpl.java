@@ -270,6 +270,23 @@ public class EventRepositoryJDBCImpl implements EventRepository {
         }
     }
 
+    @Override
+    public List<Event> findEventsByIds(Set<Long> eventsIds) {
+        String query = getSelectQueryWithUserCategoryAndRequest() +
+                "WHERE e.event_id IN (:eventsIds) " +
+                "GROUP BY e.event_id, e.event_date, c.category_id, u.user_id " +
+                "ORDER BY e.event_date ";
+        SqlParameterSource namedParams = new MapSqlParameterSource()
+                .addValue("eventsIds", eventsIds)
+                .addValue("requestStatus", RequestStatus.CONFIRMED.toString());
+
+        try {
+            return jdbcTemplate.query(query, namedParams, this::mapRowToEventFull);
+        } catch (EmptyResultDataAccessException e) {
+            return List.of();
+        }
+    }
+
     private Event mapRowToEventNoCategory(ResultSet resultSet, int rowNum) throws SQLException {
         return getEventBuilderWithBaseFields(resultSet, rowNum).build();
     }
