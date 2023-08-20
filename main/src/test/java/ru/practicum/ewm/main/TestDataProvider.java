@@ -170,6 +170,14 @@ public class TestDataProvider {
                 .build();
     }
 
+    public NewCompilationDto getValidNewCompilationDto() {
+        return NewCompilationDto.builder()
+                .pinned(true)
+                .title("tittle")
+                .events(Set.of(0L))
+                .build();
+    }
+
     public EventParticipationRequest getValidRequestToSave(User user, Event event) {
         return EventParticipationRequest.builder()
                 .requester(user)
