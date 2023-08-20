@@ -13,6 +13,8 @@ import ru.practicum.ewm.main.event.dto.updateRequest.UserRequestStateAction;
 import ru.practicum.ewm.main.event.model.Event;
 import ru.practicum.ewm.main.event.model.EventState;
 import ru.practicum.ewm.main.event.model.Location;
+import ru.practicum.ewm.main.request.model.EventParticipationRequest;
+import ru.practicum.ewm.main.request.model.RequestStatus;
 import ru.practicum.ewm.main.user.dto.UserShortDto;
 import ru.practicum.ewm.main.user.model.User;
 
@@ -153,6 +155,15 @@ public class TestDataProvider {
                 .location(new Location(123.123f, 124.124f))
                 .requestModeration(true)
                 .stateAction(AdminRequestStateAction.PUBLISH_EVENT)
+                .build();
+    }
+
+    public EventParticipationRequest getValidRequestToSave(User user, Event event) {
+        return EventParticipationRequest.builder()
+                .requester(user)
+                .requestStatus(RequestStatus.CONFIRMED)
+                .event(event)
+                .created(LocalDateTime.now().withNano(0))
                 .build();
     }
 }

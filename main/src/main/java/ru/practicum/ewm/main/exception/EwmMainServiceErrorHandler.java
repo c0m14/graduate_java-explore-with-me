@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -88,6 +89,13 @@ public class EwmMainServiceErrorHandler {
     public ErrorResponse handleForbiddenException(ForbiddenException e) {
         log.error(e.getMessage(), e);
         return new ErrorResponse(e.getParamName(), e.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
+        log.error(e.getMessage(), e);
+        return new ErrorResponse("Query parameter", e.getMessage());
     }
 
     @ExceptionHandler

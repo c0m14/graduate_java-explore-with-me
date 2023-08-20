@@ -14,8 +14,12 @@ import ru.practicum.ewm.main.TestDataProvider;
 import ru.practicum.ewm.main.event.dto.NewEventDto;
 import ru.practicum.ewm.main.event.dto.updateRequest.UpdateEventUserRequest;
 import ru.practicum.ewm.main.event.service.EventService;
+import ru.practicum.ewm.main.request.dto.EventRequestStatusUpdateRequest;
+import ru.practicum.ewm.main.request.dto.RequestStatusUpdateDto;
+import ru.practicum.ewm.main.request.service.RequestService;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -33,6 +37,8 @@ class PrivateEventControllerTest {
     private ObjectMapper objectMapper;
     @MockBean
     private EventService eventService;
+    @MockBean
+    private RequestService requestService;
     @Captor
     private ArgumentCaptor<NewEventDto> newEventDtoArgumentCaptor;
     @Captor
@@ -45,6 +51,8 @@ class PrivateEventControllerTest {
     private ArgumentCaptor<Long> eventIdArgumentCaptor;
     @Captor
     private ArgumentCaptor<UpdateEventUserRequest> updateRequestArgumentCaptor;
+    @Captor
+    private ArgumentCaptor<EventRequestStatusUpdateRequest> updateStatusesArgumentCaptor;
 
     @Test
     @SneakyThrows
@@ -774,5 +782,50 @@ class PrivateEventControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @SneakyThrows
+    void getUserParticipationRequestsForEvent_whenInvoked_thenStatusIsOkAndParamsPassedToRequestService() {
+        Long userId = 1L;
+        Long eventId = 2L;
+
+        mvc.perform(get("/users/{userId}/events/{eventId}/requests", userId, eventId))
+                .andExpect(status().isOk());
+
+        verify(requestService, times(1))
+                .findRequestsToEvent(
+                        userIdArgumentCaptor.capture(),
+                        eventIdArgumentCaptor.capture()
+                );
+        assertThat(userIdArgumentCaptor.getValue(), equalTo(userId));
+        assertThat(eventIdArgumentCaptor.getValue(), equalTo(eventId));
+    }
+
+    @Test
+    @SneakyThrows
+    void updateParticipationRequestForEventByOwner_whenInvoked_thenStatusIsOkAndParamsPassedToRequestService() {
+        Long userId = 1L;
+        Long eventId = 2L;
+        EventRequestStatusUpdateRequest updateRequest = EventRequestStatusUpdateRequest.builder()
+                .requestIds(List.of(1L))
+                .status(RequestStatusUpdateDto.CONFIRMED)
+                .build();
+
+
+        mvc.perform(patch("/users/{userId}/events/{eventId}/requests", userId, eventId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest)))
+                .andExpect(status().isOk());
+
+        verify(requestService, times(1))
+                .updateRequestsStatuses(
+                        userIdArgumentCaptor.capture(),
+                        eventIdArgumentCaptor.capture(),
+                        updateStatusesArgumentCaptor.capture()
+                );
+        assertThat(userIdArgumentCaptor.getValue(), equalTo(userId));
+        assertThat(eventIdArgumentCaptor.getValue(), equalTo(eventId));
+        assertThat(updateStatusesArgumentCaptor.getValue(), equalTo(updateRequest));
     }
 }

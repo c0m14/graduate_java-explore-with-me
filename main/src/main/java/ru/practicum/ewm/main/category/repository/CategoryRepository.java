@@ -15,5 +15,5 @@ public interface CategoryRepository {
 
     List<Category> findCategories(int offset, int size);
 
-    Optional<Category> getCategoryById(int categoryId);
+    Optional<Category> findCategoryById(int categoryId);
 }

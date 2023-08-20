@@ -31,6 +31,7 @@ public class Event {
     private LocalDateTime createdOn;
     private LocalDateTime publishedOn;
     private EventState state;
+    private int confirmedRequests;
 
     public Map<String, Object> mapToDb() {
         Map<String, Object> eventFields = new HashMap<>();

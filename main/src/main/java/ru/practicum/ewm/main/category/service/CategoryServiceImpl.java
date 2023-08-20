@@ -57,7 +57,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryDto getCategoryById(int categoryId) {
-        Category foundCategory = categoryRepository.getCategoryById(categoryId).orElseThrow(
+        Category foundCategory = categoryRepository.findCategoryById(categoryId).orElseThrow(
                 () -> new NotExistsException(
                         "Category",
                         String.format("Category with id %d not exists", categoryId)

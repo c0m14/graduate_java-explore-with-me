@@ -49,7 +49,8 @@ create table if not exists event_participation_request (
     constraint fk_event_participation_request__event foreign key (event_id) references event (event_id)
         on delete cascade,
     constraint fk_event_participation_request__users foreign key (requester_id) references users (user_id)
-        on delete cascade
+        on delete cascade,
+    constraint event_user_unique unique(event_id, requester_id)
 );
 
 create table if not exists compilation (

@@ -26,4 +26,5 @@ public interface EventService {
     EventFullDto findEventByIdPublic(Long eventId, String ip);
 
     List<EventFullDto> findEventsAdmin(AdminSearchParamsDto searchParams);
+
 }

@@ -8,7 +8,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Component;
-import ru.practicum.ewm.main.exception.InvalidParamException;
+import ru.practicum.ewm.main.exception.ForbiddenException;
 import ru.practicum.ewm.main.exception.NotExistsException;
 import ru.practicum.ewm.main.user.model.User;
 
@@ -32,7 +32,7 @@ public class UserRepositoryJDBCImpl implements UserRepository {
         try {
             savedUserId = simpleJdbcInsert.executeAndReturnKey(user.mapToDb()).longValue();
         } catch (DataIntegrityViolationException e) {
-            throw new InvalidParamException(
+            throw new ForbiddenException(
                     "Email",
                     String.format("User with email %s already exists", user.getEmail())
             );
@@ -43,7 +43,7 @@ public class UserRepositoryJDBCImpl implements UserRepository {
     }
 
     @Override
-    public List<User> getUsers(List<Long> ids, int offset, int size) {
+    public List<User> findUsers(List<Long> ids, int offset, int size) {
         StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.append("SELECT user_id, user_name, email ");
         queryBuilder.append("FROM users ");
@@ -82,7 +82,7 @@ public class UserRepositoryJDBCImpl implements UserRepository {
     }
 
     @Override
-    public Optional<User> getUserById(Long userId) {
+    public Optional<User> findUserById(Long userId) {
         String query = "SELECT user_id, user_name, email " +
                 "FROM users " +
                 "WHERE user_id = :userId";

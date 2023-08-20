@@ -59,7 +59,7 @@ public class EventRepositoryTests {
         Event event2ToSave = TestDataProvider.getValidNotSavedEvent(otherUser, category);
         eventRepository.save(event2ToSave);
 
-        List<Event> foundEvents = eventRepository.getUsersEvents(owner.getId(), offset, size);
+        List<Event> foundEvents = eventRepository.findUsersEvents(owner.getId(), offset, size);
 
         assertThat(foundEvents.size(), equalTo(1));
         assertThat(foundEvents.get(0).getId(), equalTo(event1Id));
@@ -72,7 +72,7 @@ public class EventRepositoryTests {
         int size = 10;
         Long userId = 0L;
 
-        List<Event> foundEvents = eventRepository.getUsersEvents(userId, offset, size);
+        List<Event> foundEvents = eventRepository.findUsersEvents(userId, offset, size);
 
         assertTrue(foundEvents.isEmpty());
     }
@@ -86,7 +86,7 @@ public class EventRepositoryTests {
         Event event1ToSave = TestDataProvider.getValidNotSavedEvent(owner, category);
         eventRepository.save(event1ToSave);
 
-        List<Event> foundEvents = eventRepository.getUsersEvents(owner.getId(), offset, size);
+        List<Event> foundEvents = eventRepository.findUsersEvents(owner.getId(), offset, size);
 
         assertThat(foundEvents.get(0).getCategory(), equalTo(category));
     }
@@ -100,7 +100,7 @@ public class EventRepositoryTests {
         Event event1ToSave = TestDataProvider.getValidNotSavedEvent(initiator, category);
         eventRepository.save(event1ToSave);
 
-        List<Event> foundEvents = eventRepository.getUsersEvents(initiator.getId(), offset, size);
+        List<Event> foundEvents = eventRepository.findUsersEvents(initiator.getId(), offset, size);
 
         assertThat(foundEvents.get(0).getInitiator().getId(), equalTo(initiator.getId()));
         assertThat(foundEvents.get(0).getInitiator().getName(), equalTo(initiator.getName()));
@@ -119,7 +119,7 @@ public class EventRepositoryTests {
         event2ToSave.setEventDate(LocalDateTime.now().plusDays(1).withNano(0));
         eventRepository.save(event2ToSave);
 
-        List<Event> foundEvents = eventRepository.getUsersEvents(owner.getId(), offset, size);
+        List<Event> foundEvents = eventRepository.findUsersEvents(owner.getId(), offset, size);
 
         assertThat(foundEvents.get(0).getId(), equalTo(event1ToSave.getId()));
         assertThat(foundEvents.get(1).getId(), equalTo(event2ToSave.getId()));
@@ -138,7 +138,7 @@ public class EventRepositoryTests {
         event2ToSave.setEventDate(LocalDateTime.now().plusDays(1).withNano(0));
         eventRepository.save(event2ToSave);
 
-        List<Event> foundEvents = eventRepository.getUsersEvents(owner.getId(), offset, size);
+        List<Event> foundEvents = eventRepository.findUsersEvents(owner.getId(), offset, size);
 
         assertThat(foundEvents.size(), equalTo(1));
         assertThat(foundEvents.get(0).getId(), equalTo(event2ToSave.getId()));
@@ -157,7 +157,7 @@ public class EventRepositoryTests {
         event2ToSave.setEventDate(LocalDateTime.now().plusDays(1).withNano(0));
         eventRepository.save(event2ToSave);
 
-        List<Event> foundEvents = eventRepository.getUsersEvents(owner.getId(), offset, size);
+        List<Event> foundEvents = eventRepository.findUsersEvents(owner.getId(), offset, size);
 
         assertThat(foundEvents.size(), equalTo(1));
         assertThat(foundEvents.get(0).getId(), equalTo(event1ToSave.getId()));

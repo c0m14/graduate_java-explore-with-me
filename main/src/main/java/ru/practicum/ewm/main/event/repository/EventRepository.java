@@ -13,7 +13,7 @@ public interface EventRepository {
 
     Optional<Event> findEventByInitiatorIdAndEventId(Long userId, Long eventId);
 
-    List<Event> getUsersEvents(Long userId, int offset, int size);
+    List<Event> findUsersEvents(Long userId, int offset, int size);
 
     Event save(Event event);
 
@@ -24,4 +24,6 @@ public interface EventRepository {
     Optional<Event> findEventByIdAndState(Long eventId, EventState state);
 
     Optional<Event> findEventById(Long eventId);
+
+    Optional<Event> findEventByIdWithoutCategory(Long eventId);
 }

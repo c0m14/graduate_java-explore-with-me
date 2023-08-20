@@ -64,13 +64,12 @@ public class EventServiceImpl implements EventService {
     public List<EventShortDto> findUsersEvents(Long userId, int from, int size) {
         checkIfUserExist(userId);
 
-        List<Event> foundEvents = eventRepository.getUsersEvents(userId, from, size);
+        List<Event> foundEvents = eventRepository.findUsersEvents(userId, from, size);
         if (foundEvents.isEmpty()) {
             return List.of();
         }
 
         List<EventShortDto> eventShortDtos = mapToShortDtoAndFetchViews(foundEvents);
-        //TODO add confirmed requests
 
         return eventShortDtos;
     }
@@ -86,7 +85,6 @@ public class EventServiceImpl implements EventService {
 
         EventFullDto eventFullDto = mapToFullDtoAndFetchViews(foundEvent);
 
-        //TODO add confirmed requests
         return eventFullDto;
     }
 
@@ -105,7 +103,6 @@ public class EventServiceImpl implements EventService {
 
         EventFullDto eventFullDto = mapToFullDtoAndFetchViews(eventToUpdate);
 
-        //TODO add confirmed requests
         return eventFullDto;
     }
 
@@ -125,7 +122,6 @@ public class EventServiceImpl implements EventService {
 
         EventFullDto eventFullDto = mapToFullDtoAndFetchViews(eventToUpdate);
 
-        //TODO add confirmed requests
         return eventFullDto;
     }
 
@@ -178,7 +174,6 @@ public class EventServiceImpl implements EventService {
         }
 
         List<EventFullDto> eventFullDtos = mapToFullDtoAndFetchViews(foundEvents);
-        //TODO add confirmed requests
         return eventFullDtos;
     }
 
@@ -273,7 +268,7 @@ public class EventServiceImpl implements EventService {
 
 
     private User getUserFromDb(Long userId) {
-        return userRepository.getUserById(userId).orElseThrow(
+        return userRepository.findUserById(userId).orElseThrow(
                 () -> new InvalidParamException(
                         "User id",
                         String.format("User with id %d not exists", userId)
@@ -286,7 +281,7 @@ public class EventServiceImpl implements EventService {
     }
 
     private Category getCategoryFromDb(int categoryId) {
-        return categoryRepository.getCategoryById(categoryId).orElseThrow(
+        return categoryRepository.findCategoryById(categoryId).orElseThrow(
                 () -> new InvalidParamException(
                         "Category id",
                         String.format("Category with id %d not exists", categoryId)

@@ -10,6 +10,10 @@ import ru.practicum.ewm.main.event.dto.EventShortDto;
 import ru.practicum.ewm.main.event.dto.NewEventDto;
 import ru.practicum.ewm.main.event.dto.updateRequest.UpdateEventUserRequest;
 import ru.practicum.ewm.main.event.service.EventService;
+import ru.practicum.ewm.main.request.dto.EventRequestStatusUpdateRequest;
+import ru.practicum.ewm.main.request.dto.EventRequestStatusUpdateResult;
+import ru.practicum.ewm.main.request.dto.ParticipationRequestDto;
+import ru.practicum.ewm.main.request.service.RequestService;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Positive;
@@ -23,6 +27,7 @@ import java.util.List;
 public class PrivateEventController {
 
     private final EventService eventService;
+    private final RequestService requestService;
 
     @PostMapping("/users/{userId}/events")
     @ResponseStatus(HttpStatus.CREATED)
@@ -66,5 +71,29 @@ public class PrivateEventController {
         EventFullDto updatedEvent = eventService.updateEventByUser(userId, eventId, updateEventRequest);
         log.info("Finish PATCH /users/{userId}/events/{eventId} with {}", updatedEvent);
         return updatedEvent;
+    }
+
+
+    @GetMapping("/users/{userId}/events/{eventId}/requests")
+    public List<ParticipationRequestDto> getParticipationRequestsForEvent(
+            @PathVariable("userId") Long eventOwnerId,
+            @PathVariable("eventId") Long eventId) {
+        log.info("Start GET /users/{userId}/events/{eventId}/requests with userId: {}, eventId: {}", eventOwnerId, eventId);
+        List<ParticipationRequestDto> foundRequests = requestService.findRequestsToEvent(eventOwnerId, eventId);
+        log.info("Finish GET /users/{userId}/events/{eventId}/requests with: {}", foundRequests);
+        return foundRequests;
+    }
+
+    @PatchMapping("/users/{userId}/events/{eventId}/requests")
+    public EventRequestStatusUpdateResult updateParticipationRequestForEventByOwner(
+            @PathVariable("userId") Long eventOwnerId,
+            @PathVariable("eventId") Long eventId,
+            @RequestBody EventRequestStatusUpdateRequest statusUpdateRequest) {
+        log.info("Start PATCH /users/{userId}/events/{eventId}/requests with userId: {}, eventId: {}, " +
+                "statusUpdateRequest: {}", eventOwnerId, eventId, statusUpdateRequest);
+        EventRequestStatusUpdateResult statusUpdateResult =
+                requestService.updateRequestsStatuses(eventOwnerId, eventId, statusUpdateRequest);
+        log.info("Finish PATCH /users/{userId}/events/{eventId}/requests with {}", statusUpdateResult);
+        return statusUpdateResult;
     }
 }

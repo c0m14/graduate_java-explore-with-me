@@ -29,7 +29,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<UserDto> getUsers(List<Long> ids, int from, int size) {
 
-        List<User> foundUsers = userRepository.getUsers(ids, from, size);
+        List<User> foundUsers = userRepository.findUsers(ids, from, size);
 
         return foundUsers.stream()
                 .map(UserMapper::mapToUserDto)

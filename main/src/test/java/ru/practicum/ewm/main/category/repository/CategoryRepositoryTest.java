@@ -107,7 +107,7 @@ class CategoryRepositoryTest {
     void getCategoryReturnedOptionalEmptyWhenNotFound() {
         int categoryId = 0;
 
-        Optional<Category> foundCategory = categoryRepository.getCategoryById(categoryId);
+        Optional<Category> foundCategory = categoryRepository.findCategoryById(categoryId);
 
         assertTrue(foundCategory.isEmpty());
     }

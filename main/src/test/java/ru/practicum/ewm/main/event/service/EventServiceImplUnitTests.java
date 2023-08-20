@@ -94,7 +94,7 @@ class EventServiceImplUnitTests {
     void addEvent_whenUserNotFound_thenInvalidParamExceptionThrown() {
         Long userId = 0L;
         NewEventDto newEventDto = TestDataProvider.getValidNewEventDto();
-        when(userRepository.getUserById(userId))
+        when(userRepository.findUserById(userId))
                 .thenReturn(Optional.empty());
 
         Executable executable = () -> eventService.addEvent(userId, newEventDto);
@@ -110,9 +110,9 @@ class EventServiceImplUnitTests {
         Long userId = 0L;
         NewEventDto newEventDto = TestDataProvider.getValidNewEventDto();
         int categoryId = newEventDto.getCategory();
-        when(userRepository.getUserById(userId))
+        when(userRepository.findUserById(userId))
                 .thenReturn(Optional.of(new User()));
-        when(categoryRepository.getCategoryById(categoryId))
+        when(categoryRepository.findCategoryById(categoryId))
                 .thenReturn(Optional.empty());
 
         Executable executable = () -> eventService.addEvent(userId, newEventDto);
@@ -130,9 +130,9 @@ class EventServiceImplUnitTests {
         int categoryId = newEventDto.getCategory();
         User user = new User();
         Category category = new Category();
-        when(userRepository.getUserById(userId))
+        when(userRepository.findUserById(userId))
                 .thenReturn(Optional.of(user));
-        when(categoryRepository.getCategoryById(categoryId))
+        when(categoryRepository.findCategoryById(categoryId))
                 .thenReturn(Optional.of(category));
         try (MockedStatic<EventMapper> eventMapperMock = Mockito.mockStatic(EventMapper.class)) {
             eventMapperMock.when(() -> EventMapper.mapToEntity(newEventDto, user, category))
@@ -157,9 +157,9 @@ class EventServiceImplUnitTests {
         int categoryId = newEventDto.getCategory();
         User user = new User();
         Category category = new Category();
-        when(userRepository.getUserById(userId))
+        when(userRepository.findUserById(userId))
                 .thenReturn(Optional.of(user));
-        when(categoryRepository.getCategoryById(categoryId))
+        when(categoryRepository.findCategoryById(categoryId))
                 .thenReturn(Optional.of(category));
         try (MockedStatic<EventMapper> eventMapperMock = Mockito.mockStatic(EventMapper.class)) {
             eventMapperMock.when(() -> EventMapper.mapToEntity(newEventDto, user, category))
@@ -182,7 +182,7 @@ class EventServiceImplUnitTests {
         int from = 0;
         int size = 10;
         Long userId = 0L;
-        when(userRepository.getUserById(userId))
+        when(userRepository.findUserById(userId))
                 .thenReturn(Optional.empty());
 
         Executable executable = () -> eventService.findUsersEvents(userId, from, size);
@@ -195,9 +195,9 @@ class EventServiceImplUnitTests {
         int from = 0;
         int size = 10;
         Long userId = 0L;
-        when(userRepository.getUserById(userId))
+        when(userRepository.findUserById(userId))
                 .thenReturn(Optional.of(new User()));
-        when(eventRepository.getUsersEvents(userId, from, size))
+        when(eventRepository.findUsersEvents(userId, from, size))
                 .thenReturn(List.of());
 
         List<EventShortDto> froundEvents = eventService.findUsersEvents(userId, from, size);
@@ -216,9 +216,9 @@ class EventServiceImplUnitTests {
         Event event2 = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
         event1.setCreatedOn(event1CreatedOn);
         event2.setCreatedOn(event2CreatedOn);
-        when(userRepository.getUserById(userId))
+        when(userRepository.findUserById(userId))
                 .thenReturn(Optional.of(new User()));
-        when(eventRepository.getUsersEvents(userId, from, size))
+        when(eventRepository.findUsersEvents(userId, from, size))
                 .thenReturn(List.of(event1, event2));
 
         try {
@@ -244,9 +244,9 @@ class EventServiceImplUnitTests {
         Event event2 = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
         event1.setCreatedOn(event1CreatedOn);
         event2.setCreatedOn(event2CreatedOn);
-        when(userRepository.getUserById(userId))
+        when(userRepository.findUserById(userId))
                 .thenReturn(Optional.of(new User()));
-        when(eventRepository.getUsersEvents(userId, from, size))
+        when(eventRepository.findUsersEvents(userId, from, size))
                 .thenReturn(List.of(event1, event2));
 
         try {
@@ -277,9 +277,9 @@ class EventServiceImplUnitTests {
         event1.setId(event1Id);
         event2.setCreatedOn(event2CreatedOn);
         event2.setId(event2Id);
-        when(userRepository.getUserById(userId))
+        when(userRepository.findUserById(userId))
                 .thenReturn(Optional.of(new User()));
-        when(eventRepository.getUsersEvents(userId, from, size))
+        when(eventRepository.findUsersEvents(userId, from, size))
                 .thenReturn(List.of(event1, event2));
 
         try {
@@ -306,9 +306,9 @@ class EventServiceImplUnitTests {
         Event event2 = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
         event1.setCreatedOn(event1CreatedOn);
         event2.setCreatedOn(event2CreatedOn);
-        when(userRepository.getUserById(userId))
+        when(userRepository.findUserById(userId))
                 .thenReturn(Optional.of(new User()));
-        when(eventRepository.getUsersEvents(userId, from, size))
+        when(eventRepository.findUsersEvents(userId, from, size))
                 .thenReturn(List.of(event1, event2));
 
         try {
@@ -348,9 +348,9 @@ class EventServiceImplUnitTests {
                 .uri("/events/2")
                 .hits(10L)
                 .build();
-        when(userRepository.getUserById(userId))
+        when(userRepository.findUserById(userId))
                 .thenReturn(Optional.of(new User()));
-        when(eventRepository.getUsersEvents(userId, from, size))
+        when(eventRepository.findUsersEvents(userId, from, size))
                 .thenReturn(List.of(event1, event2));
         when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
                 .thenReturn(List.of(event2Stat, event1Stat));
@@ -387,9 +387,9 @@ class EventServiceImplUnitTests {
                 .uri("/events/2")
                 .hits(10L)
                 .build();
-        when(userRepository.getUserById(userId))
+        when(userRepository.findUserById(userId))
                 .thenReturn(Optional.of(new User()));
-        when(eventRepository.getUsersEvents(userId, from, size))
+        when(eventRepository.findUsersEvents(userId, from, size))
                 .thenReturn(List.of(event1, event2));
         when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
                 .thenReturn(List.of(event2Stat));
@@ -410,7 +410,7 @@ class EventServiceImplUnitTests {
     void findUserEventById_whenUserNotExist_thenInvalidParamExceptionThrown() {
         Long userId = 0L;
         Long eventId = 0L;
-        when(userRepository.getUserById(userId))
+        when(userRepository.findUserById(userId))
                 .thenReturn(Optional.empty());
 
         Executable executable = () -> eventService.findUserEventById(userId, eventId);
@@ -422,7 +422,7 @@ class EventServiceImplUnitTests {
     void findUserEventById_whenEventNotFound_thenNotExistsExceptionThrown() {
         Long userId = 0L;
         Long eventId = 0L;
-        when(userRepository.getUserById(userId))
+        when(userRepository.findUserById(userId))
                 .thenReturn(Optional.of(new User()));
         when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.empty());
@@ -438,7 +438,7 @@ class EventServiceImplUnitTests {
         Long eventId = 1L;
         Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
         foundEvent.setId(eventId);
-        when(userRepository.getUserById(userId))
+        when(userRepository.findUserById(userId))
                 .thenReturn(Optional.of(new User()));
         when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.of(foundEvent));
@@ -473,7 +473,7 @@ class EventServiceImplUnitTests {
                 .uri(String.format("/events/%d", eventId))
                 .hits(10L)
                 .build();
-        when(userRepository.getUserById(userId))
+        when(userRepository.findUserById(userId))
                 .thenReturn(Optional.of(new User()));
         when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.of(foundEvent));
@@ -500,7 +500,7 @@ class EventServiceImplUnitTests {
                 .uri("/events/999")
                 .hits(10L)
                 .build();
-        when(userRepository.getUserById(userId))
+        when(userRepository.findUserById(userId))
                 .thenReturn(Optional.of(new User()));
         when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.of(foundEvent));
@@ -592,7 +592,7 @@ class EventServiceImplUnitTests {
         Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
         when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.of(updatedEvent));
-        when(categoryRepository.getCategoryById(categoryId))
+        when(categoryRepository.findCategoryById(categoryId))
                 .thenReturn(Optional.of(category));
 
         eventService.updateEventByUser(userId, eventId, updateRequest);
@@ -613,7 +613,7 @@ class EventServiceImplUnitTests {
         Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
         when(eventRepository.findEventByInitiatorIdAndEventId(userId, eventId))
                 .thenReturn(Optional.of(updatedEvent));
-        when(categoryRepository.getCategoryById(categoryId))
+        when(categoryRepository.findCategoryById(categoryId))
                 .thenReturn(Optional.empty());
 
         Executable executable = () -> eventService.updateEventByUser(userId, eventId, updateRequest);
@@ -1450,7 +1450,7 @@ class EventServiceImplUnitTests {
         Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
         when(eventRepository.findEventById(eventId))
                 .thenReturn(Optional.of(updatedEvent));
-        when(categoryRepository.getCategoryById(categoryId))
+        when(categoryRepository.findCategoryById(categoryId))
                 .thenReturn(Optional.of(category));
 
         eventService.updateEventByAdmin(eventId, updateRequest);
@@ -1470,7 +1470,7 @@ class EventServiceImplUnitTests {
         Event updatedEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
         when(eventRepository.findEventById(eventId))
                 .thenReturn(Optional.of(updatedEvent));
-        when(categoryRepository.getCategoryById(categoryId))
+        when(categoryRepository.findCategoryById(categoryId))
                 .thenReturn(Optional.empty());
 
         Executable executable = () -> eventService.updateEventByAdmin(eventId, updateRequest);

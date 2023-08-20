@@ -76,7 +76,7 @@ public class CategoryRepositoryJDBCImpl implements CategoryRepository {
     }
 
     @Override
-    public Optional<Category> getCategoryById(int categoryId) {
+    public Optional<Category> findCategoryById(int categoryId) {
         String query = "SELECT category_id, category_name " +
                 "FROM category " +
                 "WHERE category_id = :categoryId";

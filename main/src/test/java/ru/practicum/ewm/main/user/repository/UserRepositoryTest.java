@@ -57,7 +57,7 @@ class UserRepositoryTest {
         user3.setId(user3Id);
         List<Long> ids = List.of(user1Id, user2Id);
 
-        List<User> foundUsers = userRepository.getUsers(ids, 0, 10);
+        List<User> foundUsers = userRepository.findUsers(ids, 0, 10);
 
         assertThat(foundUsers.size(), equalTo(ids.size()));
         assertTrue(foundUsers.contains(user1));
@@ -78,7 +78,7 @@ class UserRepositoryTest {
         user3.setId(user3Id);
         List<Long> ids = List.of(user1Id, user2Id);
 
-        List<User> foundUsers = userRepository.getUsers(ids, 0, 10);
+        List<User> foundUsers = userRepository.findUsers(ids, 0, 10);
 
         assertThat(foundUsers.size(), equalTo(ids.size()));
         assertThat(foundUsers.get(0), equalTo(user1));
@@ -98,7 +98,7 @@ class UserRepositoryTest {
         user3.setId(user3Id);
         List<Long> ids = List.of();
 
-        List<User> foundUsers = userRepository.getUsers(ids, 1, 10);
+        List<User> foundUsers = userRepository.findUsers(ids, 1, 10);
 
         assertThat(foundUsers.size(), equalTo(2));
         assertThat(foundUsers.get(0), equalTo(user2));
@@ -118,7 +118,7 @@ class UserRepositoryTest {
         user3.setId(user3Id);
         List<Long> ids = List.of();
 
-        List<User> foundUsers = userRepository.getUsers(ids, 2, 1);
+        List<User> foundUsers = userRepository.findUsers(ids, 2, 1);
 
         assertThat(foundUsers.size(), equalTo(1));
         assertThat(foundUsers.get(0), equalTo(user3));
@@ -133,7 +133,7 @@ class UserRepositoryTest {
         userRepository.save(user2);
         userRepository.save(user3);
 
-        List<User> foundUsers = userRepository.getUsers(null, 0, 10);
+        List<User> foundUsers = userRepository.findUsers(null, 0, 10);
 
         assertThat(foundUsers.size(), equalTo(3));
     }
@@ -144,7 +144,7 @@ class UserRepositoryTest {
         userRepository.save(user1);
         List<Long> ids = List.of(-1L);
 
-        List<User> foundUsers = userRepository.getUsers(ids, 0, 10);
+        List<User> foundUsers = userRepository.findUsers(ids, 0, 10);
 
         assertThat(foundUsers.size(), equalTo(0));
     }
@@ -156,7 +156,7 @@ class UserRepositoryTest {
 
         userRepository.deleteUser(userId);
 
-        List<User> foundUsers = userRepository.getUsers(List.of(userId), 0, 10);
+        List<User> foundUsers = userRepository.findUsers(List.of(userId), 0, 10);
         assertThat(foundUsers.size(), equalTo(0));
     }
 
@@ -172,7 +172,7 @@ class UserRepositoryTest {
 
         Long userId = userRepository.save(user).getId();
 
-        Optional<User> foundUserOptional = userRepository.getUserById(userId);
+        Optional<User> foundUserOptional = userRepository.findUserById(userId);
 
         assertFalse(foundUserOptional.isEmpty());
         assertThat(foundUserOptional.get().getName(), equalTo(user.getName()));
@@ -184,7 +184,7 @@ class UserRepositoryTest {
     void getUserByIdReturnedOptionalEmptyIdNotFound() {
         Long userId = 0L;
 
-        Optional<User> foundUserOptional = userRepository.getUserById(userId);
+        Optional<User> foundUserOptional = userRepository.findUserById(userId);
 
         assertTrue(foundUserOptional.isEmpty());
     }

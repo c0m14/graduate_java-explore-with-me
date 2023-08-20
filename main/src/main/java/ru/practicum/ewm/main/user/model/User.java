@@ -25,6 +25,10 @@ public class User {
         this.email = email;
     }
 
+    public User(Long id) {
+        this.id = id;
+    }
+
     public Map<String, Object> mapToDb() {
         Map<String, Object> userFields = new HashMap<>(5);
 

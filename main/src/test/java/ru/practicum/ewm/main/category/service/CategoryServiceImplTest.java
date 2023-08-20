@@ -24,7 +24,7 @@ class CategoryServiceImplTest {
     void getCategoryById_whenOptionalEmpty_thenNotExistExceptionThrows() {
         int categoryId = 0;
 
-        when(categoryRepository.getCategoryById(categoryId))
+        when(categoryRepository.findCategoryById(categoryId))
                 .thenReturn(Optional.empty());
 
         assertThrows(NotExistsException.class,
