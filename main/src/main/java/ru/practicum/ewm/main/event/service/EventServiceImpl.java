@@ -450,7 +450,8 @@ public class EventServiceImpl implements EventService {
     }
 
     private void checkSearchDates(PublicSearchParamsDto searchParams) {
-        if (searchParams.getRangeEnd().isBefore(searchParams.getRangeStart())) {
+        if (searchParams.getRangeEnd() != null && searchParams.getRangeStart() != null &&
+                searchParams.getRangeEnd().isBefore(searchParams.getRangeStart())) {
             throw new InvalidParamException(
                     "Search dates",
                     String.format("StartRange: %s must not be later than EndRange:%s",
