@@ -1,6 +1,7 @@
 package ru.practicum.ewm.main.category.repository;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -8,6 +9,7 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Component;
 import ru.practicum.ewm.main.category.model.Category;
+import ru.practicum.ewm.main.exception.ForbiddenException;
 import ru.practicum.ewm.main.exception.NotExistsException;
 
 import java.sql.ResultSet;
@@ -28,7 +30,16 @@ public class CategoryRepositoryJDBCImpl implements CategoryRepository {
                 .withTableName("category")
                 .usingGeneratedKeyColumns("category_id");
 
-        int savedCategoryId = simpleJdbcInsert.executeAndReturnKey(category.mapToDb()).intValue();
+        int savedCategoryId;
+        try {
+            savedCategoryId = simpleJdbcInsert.executeAndReturnKey(category.mapToDb()).intValue();
+        } catch (DataIntegrityViolationException e) {
+            throw new ForbiddenException(
+                    "Category name",
+                    String.format("Category with name %s already exists", category.getName())
+            );
+        }
+
 
         category.setId(savedCategoryId);
         return category;
