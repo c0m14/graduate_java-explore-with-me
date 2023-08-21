@@ -53,9 +53,10 @@ public class StatisticRestTemplateClientImpl implements StatisticClient {
         Map<String, Object> queryParams = Map.of(
                 "start", start.format(formatter),
                 "end", end.format(formatter),
-                "uris", uris,
+                "uris", uris.toArray(),
                 "unique", String.valueOf(unique)
         );
+
 
         return restTemplate.exchange(
                 STATS_URI_PREFIX + "?start={start}&end={end}&uris={uris}&unique={unique}",

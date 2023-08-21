@@ -119,6 +119,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public List<EventShortDto> findEvents(PublicSearchParamsDto searchParams, String ip) {
+        checkSearchDates(searchParams);
         formatSearchTextToLowerCase(searchParams);
         searchParams.setState(EventState.PUBLISHED);
         defineSearchDatesRange(searchParams);
@@ -446,6 +447,17 @@ public class EventServiceImpl implements EventService {
 
     private boolean ifParticipationLimitNotReached(Event event) {
         return event.getParticipantLimit() == 0 || event.getConfirmedRequests() >= event.getParticipantLimit();
+    }
+
+    private void checkSearchDates(PublicSearchParamsDto searchParams) {
+        if (searchParams.getRangeEnd().isBefore(searchParams.getRangeStart())) {
+            throw new InvalidParamException(
+                    "Search dates",
+                    String.format("StartRange: %s must not be later than EndRange:%s",
+                            searchParams.getRangeStart(), searchParams.getRangeEnd()
+                    )
+            );
+        }
     }
 
 }
