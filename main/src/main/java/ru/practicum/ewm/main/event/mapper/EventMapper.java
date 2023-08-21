@@ -74,6 +74,7 @@ public class EventMapper {
                 .createdOn(event.getCreatedOn())
                 .publishedOn(event.getPublishedOn())
                 .state(event.getState())
+                .confirmedRequests(event.getConfirmedRequests())
                 .build();
     }
 
