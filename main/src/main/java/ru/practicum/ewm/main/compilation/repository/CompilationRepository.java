@@ -2,6 +2,7 @@ package ru.practicum.ewm.main.compilation.repository;
 
 import ru.practicum.ewm.main.compilation.model.Compilation;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface CompilationRepository {
@@ -17,4 +18,6 @@ public interface CompilationRepository {
     void addEventsRecordsForCompilation(Compilation compilation);
 
     void update(Compilation compilation);
+
+    List<Compilation> findCompilationsWithoutEvents(boolean pinned, int offset, int size);
 }

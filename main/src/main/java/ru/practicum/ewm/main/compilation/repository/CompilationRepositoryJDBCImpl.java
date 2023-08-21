@@ -121,6 +121,25 @@ public class CompilationRepositoryJDBCImpl implements CompilationRepository {
         jdbcTemplate.update(query, namedParams);
     }
 
+    @Override
+    public List<Compilation> findCompilationsWithoutEvents(boolean pinned, int offset, int size) {
+        String query = "SELECT compilation_id, pinned, title " +
+                "FROM compilation " +
+                "WHERE pinned = :pinned " +
+                "OFFSET :offset ROWS " +
+                "FETCH NEXT :size ROWS ONLY";
+        SqlParameterSource namedParams = new MapSqlParameterSource()
+                .addValue("pinned", pinned)
+                .addValue("offset", offset)
+                .addValue("size", size);
+
+        try {
+            return jdbcTemplate.query(query, namedParams, this::mapRowToCompilationShort);
+        } catch (EmptyResultDataAccessException e) {
+            return List.of();
+        }
+    }
+
     private Compilation mapRowToCompilationShort(ResultSet resultSet, int rowNum) throws SQLException {
         return Compilation.builder()
                 .id(resultSet.getLong("compilation_id"))

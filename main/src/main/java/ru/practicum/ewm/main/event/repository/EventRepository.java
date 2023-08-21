@@ -6,6 +6,7 @@ import ru.practicum.ewm.main.event.model.Event;
 import ru.practicum.ewm.main.event.model.EventState;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -29,4 +30,6 @@ public interface EventRepository {
     Optional<Event> findEventByIdWithoutCategory(Long eventId);
 
     List<Event> findEventsByIds(Set<Long> eventsIds);
+
+    Map<Long, List<Event>> findEventsForCompilations(List<Long> compilationsIds);
 }

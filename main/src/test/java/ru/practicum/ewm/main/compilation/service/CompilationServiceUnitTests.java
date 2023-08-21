@@ -10,6 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import ru.practicum.ewm.main.TestDataProvider;
 import ru.practicum.ewm.main.category.model.Category;
+import ru.practicum.ewm.main.compilation.dto.CompilationDto;
 import ru.practicum.ewm.main.compilation.dto.NewCompilationDto;
 import ru.practicum.ewm.main.compilation.dto.UpdateCompilationRequest;
 import ru.practicum.ewm.main.compilation.model.Compilation;
@@ -27,6 +28,7 @@ import java.util.Set;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -204,5 +206,70 @@ class CompilationServiceUnitTests {
         verify(compilationRepository, times(1))
                 .update(compilationArgumentCaptor.capture());
         assertThat(compilationArgumentCaptor.getValue().isPinned(), equalTo(newPinned));
+    }
+
+    @Test
+    void findCompilations_whenCompilationsNotFound_thenEmptyListReturned() {
+        boolean pinned = false;
+        int from = 0;
+        int size = 10;
+        when(compilationRepository.findCompilationsWithoutEvents(pinned, from, size))
+                .thenReturn(List.of());
+
+        List<CompilationDto> foundCompilations = compilationService.findCompilations(pinned, from, size);
+
+        verify(eventRepository, times(0))
+                .findEventsForCompilations(anyList());
+        assertTrue(foundCompilations.isEmpty());
+    }
+
+    @Test
+    void findCompilations_whenCompilationsFound_thenEventsRequestedFromRepository() {
+        boolean pinned = false;
+        int from = 0;
+        int size = 10;
+        Long compilationId = 0L;
+        Compilation compilation = TestDataProvider.getValidCompilationToSave(List.of());
+        compilation.setId(compilationId);
+        when(compilationRepository.findCompilationsWithoutEvents(pinned, from, size))
+                .thenReturn(List.of(compilation));
+
+        try {
+            compilationService.findCompilations(pinned, from, size);
+        } catch (Throwable e) {
+            //catch params before execution complete
+        }
+
+        verify(eventRepository, times(1))
+                .findEventsForCompilations(List.of(compilationId));
+    }
+
+    @Test
+    void findById_whenCompilationNotFound_thenNotExistsExceptionThrown() {
+        Long compilationId = 0L;
+        when(compilationRepository.findByIdWithoutEvents(compilationId))
+                .thenReturn(Optional.empty());
+
+        Executable executable = () -> compilationService.findById(compilationId);
+
+        assertThrows(NotExistsException.class, executable);
+    }
+
+    @Test
+    void findById_whenCompilationFound_thenEventsRequestedFromRepository() {
+        Long compilationId = 0L;
+        Compilation compilation = TestDataProvider.getValidCompilationToSave(List.of());
+        compilation.setId(compilationId);
+        when(compilationRepository.findByIdWithoutEvents(compilationId))
+                .thenReturn(Optional.of(compilation));
+
+        try {
+            compilationService.findById(compilationId);
+        } catch (Throwable e) {
+            //catch params before execution complete
+        }
+
+        verify(eventRepository, times(1))
+                .findEventsForCompilations(List.of(compilationId));
     }
 }

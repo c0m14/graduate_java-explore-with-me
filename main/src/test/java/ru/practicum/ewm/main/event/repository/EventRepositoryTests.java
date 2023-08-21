@@ -8,12 +8,17 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import ru.practicum.ewm.main.TestDataProvider;
 import ru.practicum.ewm.main.category.model.Category;
 import ru.practicum.ewm.main.category.repository.CategoryRepository;
+import ru.practicum.ewm.main.compilation.model.Compilation;
+import ru.practicum.ewm.main.compilation.repository.CompilationRepository;
 import ru.practicum.ewm.main.event.dto.searchRequest.AdminSearchParamsDto;
 import ru.practicum.ewm.main.event.dto.searchRequest.PublicSearchParamsDto;
 import ru.practicum.ewm.main.event.dto.searchRequest.SearchSortOptionDto;
 import ru.practicum.ewm.main.event.model.Event;
 import ru.practicum.ewm.main.event.model.EventState;
 import ru.practicum.ewm.main.event.model.Location;
+import ru.practicum.ewm.main.request.model.EventParticipationRequest;
+import ru.practicum.ewm.main.request.model.RequestStatus;
+import ru.practicum.ewm.main.request.repository.RequestRepository;
 import ru.practicum.ewm.main.user.model.User;
 import ru.practicum.ewm.main.user.repository.UserRepository;
 
@@ -22,6 +27,7 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -39,6 +45,10 @@ public class EventRepositoryTests {
     private UserRepository userRepository;
     @Autowired
     private CategoryRepository categoryRepository;
+    @Autowired
+    private RequestRepository requestRepository;
+    @Autowired
+    private CompilationRepository compilationRepository;
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
@@ -741,6 +751,28 @@ public class EventRepositoryTests {
 
         assertThat(foundEvents.size(), equalTo(1));
         assertThat(foundEvents.get(0).getId(), equalTo(savedEvent1.getId()));
+    }
+
+    @Test
+    void findEventsForCompilations_whenInvoked_thenMapCompilationIdEventReturned() {
+        User eventOwner = userRepository.save(TestDataProvider.getValidUserToSave());
+        Category category = categoryRepository.save(TestDataProvider.getValidCategoryToSave());
+        Event event = eventRepository.save(TestDataProvider.getValidNotSavedEvent(eventOwner, category));
+        EventParticipationRequest request = TestDataProvider.getValidRequestToSave(new User(), event);
+        request.setRequestStatus(RequestStatus.CONFIRMED);
+        requestRepository.save(request);
+        Compilation compilation = compilationRepository.save(TestDataProvider.getValidCompilationToSave(List.of(event)));
+
+        Map<Long, List<Event>> foundMatches =
+                eventRepository.findEventsForCompilations(List.of(compilation.getId()));
+
+        assertThat(foundMatches.size(), equalTo(1));
+        List<Event> events = foundMatches.get(compilation.getId());
+        assertThat(events.size(), equalTo(1));
+        assertThat(events.get(0).getId(), equalTo(event.getId()));
+        assertThat(events.get(0).getCategory().getId(), equalTo(category.getId()));
+        assertThat(events.get(0).getInitiator().getId(), equalTo(eventOwner.getId()));
+        assertThat(events.get(0).getConfirmedRequests(), equalTo(1));
     }
 
 }

@@ -131,6 +131,79 @@ class CompilationRepositoryTest {
         assertThat(foundCompilation.getTitle(), equalTo(newTitle));
     }
 
+    @Test
+    void findByIdWithoutEvents_thenInvoked_whenCompilationFound() {
+        Compilation compilation = compilationRepository.save(TestDataProvider.getValidCompilationToSave(List.of()));
+
+        Compilation foundCompilation = compilationRepository.findByIdWithoutEvents(compilation.getId()).get();
+
+        Compilation savedCompilation = jdbcTemplate.queryForObject(
+                "select compilation_id, pinned, title " +
+                        "from compilation " +
+                        "where compilation_id = ?", this::mapRowToCompilationWithoutEvents, compilation.getId());
+        assertThat(foundCompilation, equalTo(savedCompilation));
+    }
+
+    @Test
+    void findCompilationsWithoutEvents_whenInvoked_thenCompilationsFoundWithPinnedFilter() {
+        int from = 0;
+        int size = 10;
+        Compilation compilation1 = TestDataProvider.getValidCompilationToSave(List.of());
+        Compilation compilation2 = TestDataProvider.getValidCompilationToSave(List.of());
+        compilation1.setPinned(true);
+        compilation2.setPinned(false);
+        compilation1.setTitle("title1");
+        compilation2.setTitle("title2");
+        compilationRepository.save(compilation1);
+        compilationRepository.save(compilation2);
+
+        List<Compilation> foundCompilations =
+                compilationRepository.findCompilationsWithoutEvents(true, from, size);
+
+        assertThat(foundCompilations.size(), equalTo(1));
+        assertThat(foundCompilations.get(0).getId(), equalTo(compilation1.getId()));
+    }
+
+    @Test
+    void findCompilationsWithoutEvents_whenInvoked_thenFilteredByFrom() {
+        int from = 1;
+        int size = 10;
+        Compilation compilation1 = TestDataProvider.getValidCompilationToSave(List.of());
+        Compilation compilation2 = TestDataProvider.getValidCompilationToSave(List.of());
+        compilation1.setPinned(true);
+        compilation2.setPinned(true);
+        compilation1.setTitle("title1");
+        compilation2.setTitle("title2");
+        compilationRepository.save(compilation1);
+        compilationRepository.save(compilation2);
+
+        List<Compilation> foundCompilations =
+                compilationRepository.findCompilationsWithoutEvents(true, from, size);
+
+        assertThat(foundCompilations.size(), equalTo(1));
+        assertThat(foundCompilations.get(0).getId(), equalTo(compilation2.getId()));
+    }
+
+    @Test
+    void findCompilationsWithoutEvents_whenInvoked_thenFilteredBySize() {
+        int from = 0;
+        int size = 1;
+        Compilation compilation1 = TestDataProvider.getValidCompilationToSave(List.of());
+        Compilation compilation2 = TestDataProvider.getValidCompilationToSave(List.of());
+        compilation1.setPinned(true);
+        compilation2.setPinned(true);
+        compilation1.setTitle("title1");
+        compilation2.setTitle("title2");
+        compilationRepository.save(compilation1);
+        compilationRepository.save(compilation2);
+
+        List<Compilation> foundCompilations =
+                compilationRepository.findCompilationsWithoutEvents(true, from, size);
+
+        assertThat(foundCompilations.size(), equalTo(1));
+        assertThat(foundCompilations.get(0).getId(), equalTo(compilation1.getId()));
+    }
+
 
     private Compilation mapRowToCompilationWithoutEvents(ResultSet resultSet, int rowNum) throws SQLException {
         return Compilation.builder()

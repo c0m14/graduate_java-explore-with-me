@@ -17,6 +17,7 @@ import ru.practicum.ewm.main.exception.ForbiddenException;
 import ru.practicum.ewm.main.exception.NotExistsException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -67,6 +68,53 @@ public class CompilationServiceImpl implements CompilationService {
                 .map(EventMapper::mapToShortDto)
                 .collect(Collectors.toList());
         return CompilationMapper.mapToDto(compilation, eventShortDtos);
+    }
+
+    @Override
+    @Transactional
+    public List<CompilationDto> findCompilations(boolean pinned, int from, int size) {
+        List<Compilation> compilationsWithoutEvents =
+                compilationRepository.findCompilationsWithoutEvents(pinned, from, size);
+        if (compilationsWithoutEvents.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> compilationsIds = compilationsWithoutEvents.stream()
+                .map(Compilation::getId)
+                .collect(Collectors.toList());
+        Map<Long, List<Event>> compilationsEventsMap = eventRepository.findEventsForCompilations(compilationsIds);
+
+        return compilationsWithoutEvents.stream()
+                .map(compilation ->
+                        CompilationMapper.mapToDto(
+                                compilation,
+                                compilationsEventsMap.get(compilation.getId()) != null ?
+                                        compilationsEventsMap.get(compilation.getId()).stream()
+                                                .map(EventMapper::mapToShortDto)
+                                                .collect(Collectors.toList())
+                                        :
+                                        List.of()
+                        ))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public CompilationDto findById(Long compilationId) {
+        Compilation compilation = getCompilationFromDbById(compilationId);
+        Map<Long, List<Event>> compilationsEventsMap =
+                eventRepository.findEventsForCompilations(List.of(compilationId));
+
+        if (compilationsEventsMap.get(compilationId) == null) {
+            return CompilationMapper.mapToDto(compilation, List.of());
+        } else {
+            return CompilationMapper.mapToDto(
+                    compilation,
+                    compilationsEventsMap.get(compilationId).stream()
+                            .map(EventMapper::mapToShortDto)
+                            .collect(Collectors.toList())
+            );
+        }
     }
 
     private void checkEvents(List<Event> events) {

@@ -22,9 +22,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
@@ -285,6 +283,50 @@ public class EventRepositoryJDBCImpl implements EventRepository {
         } catch (EmptyResultDataAccessException e) {
             return List.of();
         }
+    }
+
+    @Override
+    public Map<Long, List<Event>> findEventsForCompilations(List<Long> compilationsIds) {
+        String query = "SELECT ce.compilation_id, " +
+                "e.event_id, e.title, e.annotation, e.description, e.category_id, e.event_date, " +
+                "e.initiator_id, e.paid, e.latitude, e.longitude, e.participant_limit, e.request_moderation, " +
+                "e.created_on, e.published_on, e.state, " +
+                "c.category_id, c.category_name, " +
+                "u.user_id, u.user_name, " +
+                "COUNT(r.request_id) AS confirmed_requests " +
+                "FROM event AS e " +
+                "INNER JOIN category AS c ON e.category_id = c.category_id " +
+                "INNER JOIN users AS u ON e.initiator_id = u.user_id " +
+                "LEFT JOIN event_participation_request AS r ON e.event_id = r.event_id " +
+                "AND r.request_status = :requestStatus " +
+                "INNER JOIN compilations_events AS ce ON e.event_id = ce.event_id " +
+                "AND ce.compilation_id IN (:compilationsIds) " +
+                "GROUP BY e.event_id, e.event_date, u.user_id, ce.compilation_id, c.category_id ";
+        SqlParameterSource namedParams = new MapSqlParameterSource()
+                .addValue("requestStatus", RequestStatus.CONFIRMED.toString())
+                .addValue("compilationsIds", compilationsIds);
+
+        Map<Long, List<Event>> compilationsEvents = new HashMap<>();
+
+        List<Map<Long, Event>> compilationsIdWithEventsList = jdbcTemplate.query(query, namedParams,
+                ((rs, rowNum) -> Collections.singletonMap(
+                        rs.getLong("compilation_id"),
+                        mapRowToEventFull(rs, rowNum))));
+
+        compilationsIdWithEventsList.stream()
+                .flatMap(map -> map.entrySet().stream())
+                .forEach((entry -> {
+                    if (compilationsEvents.containsKey(entry.getKey())) {
+                        compilationsEvents.get(entry.getKey()).add(entry.getValue());
+                    } else {
+                        List<Event> events = new ArrayList<>();
+                        events.add(entry.getValue());
+                        compilationsEvents.put(entry.getKey(), events);
+                    }
+                }
+                ));
+
+        return compilationsEvents;
     }
 
     private Event mapRowToEventNoCategory(ResultSet resultSet, int rowNum) throws SQLException {
