@@ -69,9 +69,7 @@ public class EventServiceImpl implements EventService {
             return List.of();
         }
 
-        List<EventShortDto> eventShortDtos = mapToShortDtoAndFetchViews(foundEvents);
-
-        return eventShortDtos;
+        return mapToShortDtoAndFetchViews(foundEvents);
     }
 
     @Override
@@ -83,9 +81,7 @@ public class EventServiceImpl implements EventService {
                         String.format("Event with id %d and initiator id %d not exists", eventId, userId)
                 ));
 
-        EventFullDto eventFullDto = mapToFullDtoAndFetchViews(foundEvent);
-
-        return eventFullDto;
+        return mapToFullDtoAndFetchViews(foundEvent);
     }
 
     @Override
@@ -101,9 +97,7 @@ public class EventServiceImpl implements EventService {
         updateEventFields(eventToUpdate, updateEventRequest, UpdateType.ADMIN);
         eventRepository.updateEvent(eventToUpdate);
 
-        EventFullDto eventFullDto = mapToFullDtoAndFetchViews(eventToUpdate);
-
-        return eventFullDto;
+        return mapToFullDtoAndFetchViews(eventToUpdate);
     }
 
     @Override
@@ -120,9 +114,7 @@ public class EventServiceImpl implements EventService {
         updateEventFields(eventToUpdate, updateEventRequest, UpdateType.USER);
         eventRepository.updateEvent(eventToUpdate);
 
-        EventFullDto eventFullDto = mapToFullDtoAndFetchViews(eventToUpdate);
-
-        return eventFullDto;
+        return mapToFullDtoAndFetchViews(eventToUpdate);
     }
 
     @Override
@@ -136,6 +128,10 @@ public class EventServiceImpl implements EventService {
         if (foundEvents.isEmpty()) {
             return List.of();
         }
+        if (searchParams.getOnlyAvailable()) {
+            foundEvents = foundEvents.stream().filter(this::ifParticipationLimitNotReached)
+                    .collect(Collectors.toList());
+        }
 
         List<EventShortDto> eventShortDtos = mapToShortDtoAndFetchViews(foundEvents);
 
@@ -143,8 +139,6 @@ public class EventServiceImpl implements EventService {
             eventShortDtos = sortByViews(eventShortDtos, searchParams.getFrom(), searchParams.getSize());
         }
 
-        //TODO add confirmed requests
-        //TODO filter by limit if needed
         saveEndpointHit("/events", ip);
         return eventShortDtos;
     }
@@ -160,9 +154,8 @@ public class EventServiceImpl implements EventService {
 
         EventFullDto eventFullDto = mapToFullDtoAndFetchViews(foundEvent);
 
-        //TODO add confirmed requests
-        //TODO filter by limit if needed
         saveEndpointHit(String.format("/events/%d", eventId), ip);
+
         return eventFullDto;
     }
 
@@ -173,8 +166,7 @@ public class EventServiceImpl implements EventService {
             return List.of();
         }
 
-        List<EventFullDto> eventFullDtos = mapToFullDtoAndFetchViews(foundEvents);
-        return eventFullDtos;
+        return mapToFullDtoAndFetchViews(foundEvents);
     }
 
     private void checkIfAvailableForUpdate(
@@ -450,6 +442,10 @@ public class EventServiceImpl implements EventService {
         setViewsToEvents(eventFullDtos, eventsViews);
 
         return eventFullDtos;
+    }
+
+    private boolean ifParticipationLimitNotReached(Event event) {
+        return event.getParticipantLimit() == 0 || event.getConfirmedRequests() >= event.getParticipantLimit();
     }
 
 }
