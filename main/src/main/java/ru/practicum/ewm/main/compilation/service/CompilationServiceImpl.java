@@ -30,7 +30,7 @@ public class CompilationServiceImpl implements CompilationService {
     @Override
     public CompilationDto addCompilation(NewCompilationDto newCompilationDto) {
         List<Event> events;
-        if (!newCompilationDto.getEvents().isEmpty()) {
+        if (newCompilationDto.getEvents() != null && !newCompilationDto.getEvents().isEmpty()) {
             events = eventRepository.findEventsByIds(newCompilationDto.getEvents());
             checkEvents(events);
         } else {
@@ -64,9 +64,16 @@ public class CompilationServiceImpl implements CompilationService {
         updateCompilationFields(compilation, updateCompilationRequest);
         compilationRepository.update(compilation);
 
-        List<EventShortDto> eventShortDtos = compilation.getEvents().stream()
-                .map(EventMapper::mapToShortDto)
-                .collect(Collectors.toList());
+
+        List<EventShortDto> eventShortDtos;
+        if (compilation.getEvents() != null) {
+            eventShortDtos = compilation.getEvents().stream()
+                    .map(EventMapper::mapToShortDto)
+                    .collect(Collectors.toList());
+        } else {
+            eventShortDtos = List.of();
+        }
+
         return CompilationMapper.mapToDto(compilation, eventShortDtos);
     }
 
