@@ -128,7 +128,7 @@ public class EventServiceImpl implements EventService {
         if (foundEvents.isEmpty()) {
             return List.of();
         }
-        if (searchParams.getOnlyAvailable()) {
+        if (searchParams.getOnlyAvailable() != null && searchParams.getOnlyAvailable()) {
             foundEvents = foundEvents.stream().filter(this::ifParticipationLimitNotReached)
                     .collect(Collectors.toList());
         }

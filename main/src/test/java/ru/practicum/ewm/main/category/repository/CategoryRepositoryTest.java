@@ -7,6 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import ru.practicum.ewm.main.category.model.Category;
+import ru.practicum.ewm.main.exception.ForbiddenException;
 import ru.practicum.ewm.main.exception.NotExistsException;
 
 import java.util.List;
@@ -27,11 +28,12 @@ class CategoryRepositoryTest {
 
     @BeforeEach
     void beforeEach() {
+        jdbcTemplate.update("DELETE FROM event");
         jdbcTemplate.update("DELETE FROM category");
     }
 
     @Test
-    void save_whenNameExists_thenDataIntegrityViolationExceptionThrown() {
+    void save_whenNameExists_thenForbiddenExceptionThrown() {
         String categoryName = "name";
         Category category1 = new Category();
         category1.setName(categoryName);
@@ -39,7 +41,7 @@ class CategoryRepositoryTest {
         Category category2 = new Category();
         category2.setName(categoryName);
 
-        assertThrows(DataIntegrityViolationException.class,
+        assertThrows(ForbiddenException.class,
                 () -> categoryRepository.save(category2));
     }
 

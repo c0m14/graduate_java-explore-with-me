@@ -55,6 +55,8 @@ public class EventRepositoryTests {
     @BeforeEach
     void beforeEach() {
         jdbcTemplate.update("delete from event");
+        jdbcTemplate.update("delete from compilation");
+        jdbcTemplate.update("delete from compilations_events");
     }
 
     @Test
