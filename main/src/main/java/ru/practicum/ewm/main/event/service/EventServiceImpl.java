@@ -286,8 +286,8 @@ public class EventServiceImpl implements EventService {
         List<Event> sortedByCreatedASC = events.stream()
                 .sorted(Comparator.comparing(Event::getCreatedOn))
                 .collect(Collectors.toList());
-        LocalDateTime earliestDate = sortedByCreatedASC.get(0).getCreatedOn();
-        LocalDateTime latestDate = LocalDateTime.now().withNano(0);
+        LocalDateTime earliestDate = sortedByCreatedASC.get(0).getCreatedOn().minusMinutes(1);
+        LocalDateTime latestDate = LocalDateTime.now().withNano(0).plusMinutes(1);
         List<String> uris = events.stream()
                 .map(event -> String.format("/events/%d", event.getId()))
                 .collect(Collectors.toList());
