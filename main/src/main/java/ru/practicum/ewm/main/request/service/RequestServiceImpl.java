@@ -210,7 +210,7 @@ public class RequestServiceImpl implements RequestService {
             if (updateStatus.equals(RequestStatusUpdateDto.CONFIRMED) &&
                     !request.getRequestStatus().equals(RequestStatus.PENDING) ||
                     updateStatus.equals(RequestStatusUpdateDto.REJECTED) &&
-                            request.getRequestStatus().equals(RequestStatus.CONFIRMED) ) {
+                            request.getRequestStatus().equals(RequestStatus.CONFIRMED)) {
                 throw new ForbiddenException(
                         "Forbidden",
                         String.format("Can't change status to request with id %d, because status is final: %s",
