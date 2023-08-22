@@ -105,7 +105,7 @@ public class RequestServiceImpl implements RequestService {
 
         List<EventParticipationRequest> requests =
                 requestRepository.findRequestsForEvent(eventId, updateStatusRequest.getRequestIds());
-        checkIfAvailableToChangeStatus(requests);
+        checkIfAvailableToChangeStatus(requests, updateStatusRequest.getStatus());
 
         switch (updateStatusRequest.getStatus()) {
             case CONFIRMED:
@@ -204,9 +204,11 @@ public class RequestServiceImpl implements RequestService {
         }
     }
 
-    private void checkIfAvailableToChangeStatus(List<EventParticipationRequest> requests) {
+    private void checkIfAvailableToChangeStatus(List<EventParticipationRequest> requests,
+                                                RequestStatusUpdateDto updateStatus) {
         requests.forEach(request -> {
-            if (!request.getRequestStatus().equals(RequestStatus.PENDING)) {
+            if (updateStatus.equals(RequestStatusUpdateDto.CONFIRMED) &&
+                    !request.getRequestStatus().equals(RequestStatus.PENDING)) {
                 throw new ForbiddenException(
                         "Forbidden",
                         String.format("Can't change status to request with id %d, because status is final: %s",

@@ -430,7 +430,7 @@ class RequestServiceImplUnitTests {
     }
 
     @Test
-    void updateRequestsStatuses_whenRequestStatusConfirmed_thenForbiddenExceptionThrown() {
+    void updateRequestsStatuses_whenRequestToConfirmAndStatusConfirmed_thenForbiddenExceptionThrown() {
         Long eventOwner = 1L;
         Long eventId = 0L;
         List<Long> requestsIds = List.of(0L);
@@ -439,6 +439,7 @@ class RequestServiceImplUnitTests {
         request.setRequestStatus(RequestStatus.CONFIRMED);
         EventRequestStatusUpdateRequest statusUpdateRequest = EventRequestStatusUpdateRequest.builder()
                 .requestIds(requestsIds)
+                .status(RequestStatusUpdateDto.CONFIRMED)
                 .build();
         when(eventRepository.findEventByIdWithoutCategory(eventId))
                 .thenReturn(Optional.of(event));
@@ -454,7 +455,7 @@ class RequestServiceImplUnitTests {
     }
 
     @Test
-    void updateRequestsStatuses_whenRequestStatusRejected_thenForbiddenExceptionThrown() {
+    void updateRequestsStatuses_whenRequestToConfirmAndStatusRejected_thenForbiddenExceptionThrown() {
         Long eventOwner = 1L;
         Long eventId = 0L;
         List<Long> requestsIds = List.of(0L);
@@ -463,6 +464,7 @@ class RequestServiceImplUnitTests {
         request.setRequestStatus(RequestStatus.REJECTED);
         EventRequestStatusUpdateRequest statusUpdateRequest = EventRequestStatusUpdateRequest.builder()
                 .requestIds(requestsIds)
+                .status(RequestStatusUpdateDto.CONFIRMED)
                 .build();
         when(eventRepository.findEventByIdWithoutCategory(eventId))
                 .thenReturn(Optional.of(event));
@@ -478,7 +480,7 @@ class RequestServiceImplUnitTests {
     }
 
     @Test
-    void updateRequestsStatuses_whenRequestStatusCanceled_thenForbiddenExceptionThrown() {
+    void updateRequestsStatuses_whenRequestToConfirmAndStatusCanceled_thenForbiddenExceptionThrown() {
         Long eventOwnerId = 1L;
         Long eventId = 0L;
         List<Long> requestsIds = List.of(0L);
@@ -487,6 +489,7 @@ class RequestServiceImplUnitTests {
         request.setRequestStatus(RequestStatus.CANCELED);
         EventRequestStatusUpdateRequest statusUpdateRequest = EventRequestStatusUpdateRequest.builder()
                 .requestIds(requestsIds)
+                .status(RequestStatusUpdateDto.CONFIRMED)
                 .build();
         when(eventRepository.findEventByIdWithoutCategory(eventId))
                 .thenReturn(Optional.of(event));
