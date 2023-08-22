@@ -230,7 +230,7 @@ class EventServiceImplUnitTests {
         verify(statisticClient, times(1))
                 .getViewStats(startArgumentCaptor.capture(), any(), anyList(), anyBoolean());
 
-        assertThat(startArgumentCaptor.getValue(), equalTo(event2CreatedOn));
+        assertThat(startArgumentCaptor.getValue(), equalTo(event2CreatedOn.minusMinutes(1)));
     }
 
     @Test
@@ -259,7 +259,7 @@ class EventServiceImplUnitTests {
                 .getViewStats(any(), endArgumentCaptor.capture(), anyList(), anyBoolean());
 
         assertThat(endArgumentCaptor.getValue().truncatedTo(ChronoUnit.SECONDS),
-                equalTo(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)));
+                equalTo(LocalDateTime.now().plusMinutes(1).truncatedTo(ChronoUnit.SECONDS)));
     }
 
     @Test
@@ -456,8 +456,10 @@ class EventServiceImplUnitTests {
                         urisArgumentCaptor.capture(),
                         uniqueArgumentCaptor.capture()
                 );
-        assertThat(startArgumentCaptor.getValue(), equalTo(foundEvent.getCreatedOn()));
-        assertThat(endArgumentCaptor.getValue(), equalTo(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)));
+        assertThat(startArgumentCaptor.getValue(),
+                equalTo(foundEvent.getCreatedOn().minusMinutes(1)));
+        assertThat(endArgumentCaptor.getValue(),
+                equalTo(LocalDateTime.now().plusMinutes(1).truncatedTo(ChronoUnit.SECONDS)));
         assertThat(urisArgumentCaptor.getValue().get(0), equalTo(String.format("/events/%d", eventId)));
         assertThat(uniqueArgumentCaptor.getValue(), equalTo(true));
     }
@@ -786,8 +788,10 @@ class EventServiceImplUnitTests {
                         urisArgumentCaptor.capture(),
                         uniqueArgumentCaptor.capture()
                 );
-        assertThat(startArgumentCaptor.getValue(), equalTo(foundEvent.getCreatedOn()));
-        assertThat(endArgumentCaptor.getValue(), equalTo(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)));
+        assertThat(startArgumentCaptor.getValue(),
+                equalTo(foundEvent.getCreatedOn().minusMinutes(1)));
+        assertThat(endArgumentCaptor.getValue(),
+                equalTo(LocalDateTime.now().plusMinutes(1).truncatedTo(ChronoUnit.SECONDS)));
         assertThat(urisArgumentCaptor.getValue().get(0), equalTo(String.format("/events/%d", eventId)));
         assertThat(uniqueArgumentCaptor.getValue(), equalTo(true));
     }
@@ -951,8 +955,10 @@ class EventServiceImplUnitTests {
                         urisArgumentCaptor.capture(),
                         uniqueArgumentCaptor.capture()
                 );
-        assertThat(startArgumentCaptor.getValue(), equalTo(foundEvent.getCreatedOn()));
-        assertThat(endArgumentCaptor.getValue(), equalTo(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)));
+        assertThat(startArgumentCaptor.getValue(),
+                equalTo(foundEvent.getCreatedOn().minusMinutes(1)));
+        assertThat(endArgumentCaptor.getValue(),
+                equalTo(LocalDateTime.now().plusMinutes(1).truncatedTo(ChronoUnit.SECONDS)));
         assertThat(urisArgumentCaptor.getValue().get(0), equalTo(String.format("/events/%d", eventId)));
         assertThat(uniqueArgumentCaptor.getValue(), equalTo(true));
     }
@@ -1221,8 +1227,10 @@ class EventServiceImplUnitTests {
                         urisArgumentCaptor.capture(),
                         uniqueArgumentCaptor.capture()
                 );
-        assertThat(startArgumentCaptor.getValue(), equalTo(foundEvent.getCreatedOn()));
-        assertThat(endArgumentCaptor.getValue(), equalTo(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)));
+        assertThat(startArgumentCaptor.getValue(),
+                equalTo(foundEvent.getCreatedOn().minusMinutes(1)));
+        assertThat(endArgumentCaptor.getValue(),
+                equalTo(LocalDateTime.now().plusMinutes(1).truncatedTo(ChronoUnit.SECONDS)));
         assertThat(urisArgumentCaptor.getValue().get(0), equalTo(String.format("/events/%d", eventId)));
         assertThat(uniqueArgumentCaptor.getValue(), equalTo(true));
     }
@@ -1306,8 +1314,10 @@ class EventServiceImplUnitTests {
                         urisArgumentCaptor.capture(),
                         uniqueArgumentCaptor.capture()
                 );
-        assertThat(startArgumentCaptor.getValue(), equalTo(foundEvent.getCreatedOn()));
-        assertThat(endArgumentCaptor.getValue(), equalTo(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)));
+        assertThat(startArgumentCaptor.getValue(),
+                equalTo(foundEvent.getCreatedOn().minusMinutes(1)));
+        assertThat(endArgumentCaptor.getValue(),
+                equalTo(LocalDateTime.now().plusMinutes(1).truncatedTo(ChronoUnit.SECONDS)));
         assertThat(urisArgumentCaptor.getValue().get(0), equalTo(String.format("/events/%d", eventId)));
         assertThat(uniqueArgumentCaptor.getValue(), equalTo(true));
     }
@@ -1636,8 +1646,10 @@ class EventServiceImplUnitTests {
                         urisArgumentCaptor.capture(),
                         uniqueArgumentCaptor.capture()
                 );
-        assertThat(startArgumentCaptor.getValue(), equalTo(foundEvent.getCreatedOn()));
-        assertThat(endArgumentCaptor.getValue(), equalTo(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)));
+        assertThat(startArgumentCaptor.getValue(),
+                equalTo(foundEvent.getCreatedOn().minusMinutes(1)));
+        assertThat(endArgumentCaptor.getValue(),
+                equalTo(LocalDateTime.now().plusMinutes(1).truncatedTo(ChronoUnit.SECONDS)));
         assertThat(urisArgumentCaptor.getValue().get(0), equalTo(String.format("/events/%d", eventId)));
         assertThat(uniqueArgumentCaptor.getValue(), equalTo(true));
     }
