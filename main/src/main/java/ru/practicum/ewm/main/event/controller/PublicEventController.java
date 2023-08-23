@@ -4,10 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import ru.practicum.ewm.main.event.dto.EventFullDto;
 import ru.practicum.ewm.main.event.dto.EventShortDto;
 import ru.practicum.ewm.main.event.dto.searchrequest.PublicSearchParamsDto;
@@ -15,6 +12,8 @@ import ru.practicum.ewm.main.event.dto.searchrequest.SearchSortOptionDto;
 import ru.practicum.ewm.main.event.service.EventService;
 import ru.practicum.ewm.main.exception.InvalidParamException;
 import ru.practicum.ewm.statistic.dto.Formats;
+import ru.practicum.ewm.main.event.model.RateType;
+
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.Positive;
@@ -84,4 +83,38 @@ public class PublicEventController {
         log.info("Finish GET /events/{id} with {}", foundEvent);
         return foundEvent;
     }
+
+    @PostMapping("/users/{userId}/events/{eventId}/like")
+    public void addLikeToEvent(@PathVariable(name = "userId") Long userId,
+                               @PathVariable(name = "eventId") Long eventId) {
+        log.info("Start POST /users/{userId}/events/{eventId}/like with userId: {}, eventId: {}", userId, eventId);
+        eventService.addRateToEvent(userId, eventId, RateType.LIKE);
+        log.info("Finish POST /users/{userId}/events/{eventId}/like with userId: {}, eventId: {}", userId, eventId);
+    }
+
+    @PostMapping("/users/{userId}/events/{eventId}/dislike")
+    public void addDislikeToEvent(@PathVariable(name = "userId") Long userId,
+                                  @PathVariable(name = "eventId") Long eventId) {
+        log.info("Start POST /users/{userId}/events/{eventId}/dislike with userId: {}, eventId: {}", userId, eventId);
+        eventService.addRateToEvent(userId, eventId, RateType.DISLIKE);
+        log.info("Start POST /users/{userId}/events/{eventId}/dislike with userId: {}, eventId: {}", userId, eventId);
+    }
+
+    @DeleteMapping("/users/{userId}/events/{eventId}/like")
+    public void deleteLikeFromEvent(@PathVariable(name = "userId") Long userId,
+                                    @PathVariable(name = "eventId") Long eventId) {
+        log.info("Start DELETE /users/{userId}/events/{eventId}/like with userId: {}, eventId: {}", userId, eventId);
+        eventService.deleteRateFromEvent(userId, eventId, RateType.LIKE);
+        log.info("Finish DELETE /users/{userId}/events/{eventId}/like with userId: {}, eventId: {}", userId, eventId);
+    }
+
+    @DeleteMapping("/users/{userId}/events/{eventId}/dislike")
+    public void deleteDislikeFromEvent(@PathVariable(name = "userId") Long userId,
+                                       @PathVariable(name = "eventId") Long eventId) {
+        log.info("Start DELETE /users/{userId}/events/{eventId}/dislike with userId: {}, eventId: {}", userId, eventId);
+        eventService.deleteRateFromEvent(userId, eventId, RateType.DISLIKE);
+        log.info("Start DELETE /users/{userId}/events/{eventId}/dislike with userId: {}, eventId: {}", userId, eventId);
+    }
+
+
 }

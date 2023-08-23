@@ -17,6 +17,7 @@ import ru.practicum.ewm.main.event.model.EventState;
 import ru.practicum.ewm.main.event.model.Location;
 import ru.practicum.ewm.main.request.model.EventParticipationRequest;
 import ru.practicum.ewm.main.request.model.RequestStatus;
+import ru.practicum.ewm.main.user.dto.UserDto;
 import ru.practicum.ewm.main.user.dto.UserShortDto;
 import ru.practicum.ewm.main.user.model.User;
 
@@ -184,6 +185,14 @@ public class TestDataProvider {
                 .title("title")
                 .pinned(false)
                 .events(events)
+                .build();
+    }
+
+    public UserDto getValidUserDto(Long id) {
+        return UserDto.builder()
+                .id(id)
+                .email("email@email.ru")
+                .name("name")
                 .build();
     }
 

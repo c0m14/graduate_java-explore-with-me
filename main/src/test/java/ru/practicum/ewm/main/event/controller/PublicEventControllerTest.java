@@ -12,6 +12,7 @@ import ru.practicum.ewm.main.event.dto.searchrequest.PublicSearchParamsDto;
 import ru.practicum.ewm.main.event.dto.searchrequest.SearchSortOptionDto;
 import ru.practicum.ewm.main.event.service.EventService;
 import ru.practicum.ewm.statistic.dto.Formats;
+import ru.practicum.ewm.main.event.model.RateType;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -22,7 +23,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = PublicEventController.class)
@@ -37,6 +38,11 @@ class PublicEventControllerTest {
     private ArgumentCaptor<PublicSearchParamsDto> searchParamsArgumentCaptor;
     @Captor
     private ArgumentCaptor<Long> eventIdArgumentCaptor;
+    @Captor
+    private ArgumentCaptor<Long> userIdArgumentCaptor;
+    @Captor
+    private ArgumentCaptor<RateType> rateTypeArgumentCaptor;
+
 
     @Test
     @SneakyThrows
@@ -86,4 +92,90 @@ class PublicEventControllerTest {
 
         assertThat(eventIdArgumentCaptor.getValue(), equalTo(eventId));
     }
+
+    @Test
+    @SneakyThrows
+    void addLikeToEvent_whenInvoked_thenStatusIsOkAndParamsPassedToService() {
+        Long eventId = 0L;
+        Long userId = 0L;
+
+        mvc.perform(post("/users/{userId}/events/{eventId}/like",
+                        userId, eventId))
+                .andExpect(status().isOk());
+
+        verify(eventService, times(1))
+                .addRateToEvent(
+                        userIdArgumentCaptor.capture(),
+                        eventIdArgumentCaptor.capture(),
+                        rateTypeArgumentCaptor.capture()
+                );
+        assertThat(userIdArgumentCaptor.getValue(), equalTo(userId));
+        assertThat(eventIdArgumentCaptor.getValue(), equalTo(eventId));
+        assertThat(rateTypeArgumentCaptor.getValue(), equalTo(RateType.LIKE));
+    }
+
+    @Test
+    @SneakyThrows
+    void addDislikeToEvent_whenInvoked_thenStatusIsOkAndParamsPassedToService() {
+        Long eventId = 0L;
+        Long userId = 0L;
+
+        mvc.perform(post("/users/{userId}/events/{eventId}/dislike",
+                        userId, eventId))
+                .andExpect(status().isOk());
+
+        verify(eventService, times(1))
+                .addRateToEvent(
+                        userIdArgumentCaptor.capture(),
+                        eventIdArgumentCaptor.capture(),
+                        rateTypeArgumentCaptor.capture()
+                );
+        assertThat(userIdArgumentCaptor.getValue(), equalTo(userId));
+        assertThat(eventIdArgumentCaptor.getValue(), equalTo(eventId));
+        assertThat(rateTypeArgumentCaptor.getValue(), equalTo(RateType.DISLIKE));
+    }
+
+    @Test
+    @SneakyThrows
+    void deleteLikeToEvent_whenInvoked_thenStatusIsOkAndParamsPassedToService() {
+        Long eventId = 0L;
+        Long userId = 0L;
+
+        mvc.perform(delete("/users/{userId}/events/{eventId}/like",
+                        userId, eventId))
+                .andExpect(status().isOk());
+
+        verify(eventService, times(1))
+                .deleteRateFromEvent(
+                        userIdArgumentCaptor.capture(),
+                        eventIdArgumentCaptor.capture(),
+                        rateTypeArgumentCaptor.capture()
+                );
+        assertThat(userIdArgumentCaptor.getValue(), equalTo(userId));
+        assertThat(eventIdArgumentCaptor.getValue(), equalTo(eventId));
+        assertThat(rateTypeArgumentCaptor.getValue(), equalTo(RateType.LIKE));
+    }
+
+    @Test
+    @SneakyThrows
+    void deleteDislikeToEvent_whenInvoked_thenStatusIsOkAndParamsPassedToService() {
+        Long eventId = 0L;
+        Long userId = 0L;
+
+        mvc.perform(delete("/users/{userId}/events/{eventId}/dislike",
+                        userId, eventId))
+                .andExpect(status().isOk());
+
+        verify(eventService, times(1))
+                .deleteRateFromEvent(
+                        userIdArgumentCaptor.capture(),
+                        eventIdArgumentCaptor.capture(),
+                        rateTypeArgumentCaptor.capture()
+                );
+        assertThat(userIdArgumentCaptor.getValue(), equalTo(userId));
+        assertThat(eventIdArgumentCaptor.getValue(), equalTo(eventId));
+        assertThat(rateTypeArgumentCaptor.getValue(), equalTo(RateType.DISLIKE));
+    }
+
+
 }
