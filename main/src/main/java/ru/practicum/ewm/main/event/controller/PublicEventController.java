@@ -84,7 +84,7 @@ public class PublicEventController {
         return foundEvent;
     }
 
-    @PostMapping("/users/{userId}/events/{eventId}/like")
+    @PatchMapping("/users/{userId}/events/{eventId}/like")
     public void addLikeToEvent(@PathVariable(name = "userId") Long userId,
                                @PathVariable(name = "eventId") Long eventId) {
         log.info("Start POST /users/{userId}/events/{eventId}/like with userId: {}, eventId: {}", userId, eventId);
@@ -92,7 +92,7 @@ public class PublicEventController {
         log.info("Finish POST /users/{userId}/events/{eventId}/like with userId: {}, eventId: {}", userId, eventId);
     }
 
-    @PostMapping("/users/{userId}/events/{eventId}/dislike")
+    @PatchMapping("/users/{userId}/events/{eventId}/dislike")
     public void addDislikeToEvent(@PathVariable(name = "userId") Long userId,
                                   @PathVariable(name = "eventId") Long eventId) {
         log.info("Start POST /users/{userId}/events/{eventId}/dislike with userId: {}, eventId: {}", userId, eventId);

@@ -99,7 +99,7 @@ class PublicEventControllerTest {
         Long eventId = 0L;
         Long userId = 0L;
 
-        mvc.perform(post("/users/{userId}/events/{eventId}/like",
+        mvc.perform(patch("/users/{userId}/events/{eventId}/like",
                         userId, eventId))
                 .andExpect(status().isOk());
 
@@ -120,7 +120,7 @@ class PublicEventControllerTest {
         Long eventId = 0L;
         Long userId = 0L;
 
-        mvc.perform(post("/users/{userId}/events/{eventId}/dislike",
+        mvc.perform(patch("/users/{userId}/events/{eventId}/dislike",
                         userId, eventId))
                 .andExpect(status().isOk());
 
