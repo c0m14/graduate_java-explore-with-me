@@ -17,10 +17,14 @@ import ru.practicum.ewm.main.event.dto.updaterequest.*;
 import ru.practicum.ewm.main.event.mapper.EventMapper;
 import ru.practicum.ewm.main.event.model.Event;
 import ru.practicum.ewm.main.event.model.EventState;
+import ru.practicum.ewm.main.event.model.RateType;
 import ru.practicum.ewm.main.event.repository.EventRepository;
+import ru.practicum.ewm.main.event.repository.RateDAO;
 import ru.practicum.ewm.main.exception.ForbiddenException;
 import ru.practicum.ewm.main.exception.InvalidParamException;
 import ru.practicum.ewm.main.exception.NotExistsException;
+import ru.practicum.ewm.main.request.model.RequestStatus;
+import ru.practicum.ewm.main.request.repository.RequestRepository;
 import ru.practicum.ewm.main.user.dto.UserShortDto;
 import ru.practicum.ewm.main.user.mapper.UserMapper;
 import ru.practicum.ewm.main.user.model.User;
@@ -44,6 +48,8 @@ public class EventServiceImpl implements EventService {
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final StatisticClient statisticClient;
+    private final RequestRepository requestRepository;
+    private final RateDAO rateDAO;
 
     @Override
     @Transactional
@@ -67,7 +73,7 @@ public class EventServiceImpl implements EventService {
     public List<EventShortDto> findUsersEvents(Long userId, int from, int size) {
         checkIfUserExist(userId);
 
-        List<Event> foundEvents = eventRepository.findUsersEvents(userId, from, size);
+        List<Event> foundEvents = eventRepository.findUserEvents(userId, from, size);
         if (foundEvents.isEmpty()) {
             return List.of();
         }
@@ -84,7 +90,7 @@ public class EventServiceImpl implements EventService {
                         String.format("Event with id %d and initiator id %d not exists", eventId, userId)
                 ));
 
-        return mapToFullDtoAndFetchViews(foundEvent);
+        return mapToFullDtoAndFetchViewsAndRating(foundEvent);
     }
 
     @Override
@@ -100,7 +106,7 @@ public class EventServiceImpl implements EventService {
         updateEventFields(eventToUpdate, updateEventRequest, UpdateType.ADMIN);
         eventRepository.updateEvent(eventToUpdate);
 
-        return mapToFullDtoAndFetchViews(eventToUpdate);
+        return mapToFullDtoAndFetchViewsAndRating(eventToUpdate);
     }
 
     @Override
@@ -117,7 +123,7 @@ public class EventServiceImpl implements EventService {
         updateEventFields(eventToUpdate, updateEventRequest, UpdateType.USER);
         eventRepository.updateEvent(eventToUpdate);
 
-        return mapToFullDtoAndFetchViews(eventToUpdate);
+        return mapToFullDtoAndFetchViewsAndRating(eventToUpdate);
     }
 
     @Override
@@ -138,6 +144,9 @@ public class EventServiceImpl implements EventService {
         if (searchParams.getSortOption().equals(SearchSortOptionDto.VIEWS)) {
             eventShortDtos = sortByViews(eventShortDtos, searchParams.getFrom(), searchParams.getSize());
         }
+        if (searchParams.getSortOption().equals(SearchSortOptionDto.RATING)) {
+            eventShortDtos = sortByRating(eventShortDtos, searchParams.getFrom(), searchParams.getSize());
+        }
 
         saveEndpointHit("/events", ip);
         return eventShortDtos;
@@ -152,7 +161,7 @@ public class EventServiceImpl implements EventService {
                         )
                 );
 
-        EventFullDto eventFullDto = mapToFullDtoAndFetchViews(foundEvent);
+        EventFullDto eventFullDto = mapToFullDtoAndFetchViewsAndRating(foundEvent);
 
         saveEndpointHit(String.format("/events/%d", eventId), ip);
 
@@ -166,7 +175,23 @@ public class EventServiceImpl implements EventService {
             return List.of();
         }
 
-        return mapToFullDtoAndFetchViews(foundEvents);
+        return mapToFullDtoAndFetchViewsAndRating(foundEvents);
+    }
+
+    @Override
+    public void addRateToEvent(Long userId, Long eventId, RateType rateType) {
+        User rater = getUserFromDb(userId);
+        Event event = getEventFromDbByIdAndState(eventId, EventState.PUBLISHED);
+        checkRater(rater, event);
+
+        int rate = defineRate(rateType);
+        rateDAO.addRate(userId, eventId, rate);
+    }
+
+    @Override
+    public void deleteRateFromEvent(Long userId, Long eventId, RateType rateType) {
+        int rate = defineRate(rateType);
+        rateDAO.deleteRate(userId, eventId, rate);
     }
 
     private void checkIfAvailableForUpdate(
@@ -261,8 +286,8 @@ public class EventServiceImpl implements EventService {
 
     private User getUserFromDb(Long userId) {
         return userRepository.findUserById(userId).orElseThrow(
-                () -> new InvalidParamException(
-                        "User id",
+                () -> new NotExistsException(
+                        "User",
                         String.format("User with id %d not exists", userId)
                 )
         );
@@ -282,6 +307,15 @@ public class EventServiceImpl implements EventService {
                 () -> new InvalidParamException(
                         "Category id",
                         String.format("Category with id %d not exists", categoryId)
+                )
+        );
+    }
+
+    private Event getEventFromDbByIdAndState(Long eventId, EventState state) {
+        return eventRepository.findEventByIdAndState(eventId, state).orElseThrow(
+                () -> new NotExistsException(
+                        "Event",
+                        String.format("No events with id %d and state %s exist", eventId, state)
                 )
         );
     }
@@ -313,7 +347,7 @@ public class EventServiceImpl implements EventService {
                 }, ViewStatsDto::getHits));
     }
 
-    private void setViewsToEvents(List<? extends EventShortDto> eventDtos, Map<Long, Long> eventsViews) {
+    private void setViewsToEventsDtos(List<? extends EventShortDto> eventDtos, Map<Long, Long> eventsViews) {
         eventDtos.forEach(eventShortDto -> eventShortDto.setViews(
                 eventsViews.get(eventShortDto.getId()) != null ? eventsViews.get(eventShortDto.getId()) : 0));
     }
@@ -415,36 +449,52 @@ public class EventServiceImpl implements EventService {
         return eventsStream.collect(Collectors.toList());
     }
 
-    private List<EventShortDto> mapToShortDtoAndFetchViews(List<Event> events) {
-        Map<Long, Long> eventsViews = getEventsViews(events);
+    private List<EventShortDto> sortByRating(List<EventShortDto> originalEvents, Integer from, Integer size) {
+        Stream<EventShortDto> eventsStream = originalEvents.stream()
+                .sorted(Comparator.comparing(EventShortDto::getRating).reversed());
+        if (from != null) {
+            eventsStream = eventsStream.skip(from);
+        }
+        if (size != null) {
+            eventsStream = eventsStream.limit(size);
+        }
+        return eventsStream.collect(Collectors.toList());
+    }
 
+    private List<EventShortDto> mapToShortDtoAndFetchViews(List<Event> events) {
         List<EventShortDto> eventShortDtos = events.stream()
                 .map(EventMapper::mapToShortDto)
                 .collect(Collectors.toList());
 
-        setViewsToEvents(eventShortDtos, eventsViews);
+        Map<Long, Long> eventsViews = getEventsViews(events);
+        setViewsToEventsDtos(eventShortDtos, eventsViews);
+
+        Map<Long, Long> eventsRatings = getEventsRatings(events);
+        setRatingsToEventsDtos(eventShortDtos, eventsRatings);
+
 
         return eventShortDtos;
     }
 
-    private EventFullDto mapToFullDtoAndFetchViews(Event event) {
+    private EventFullDto mapToFullDtoAndFetchViewsAndRating(Event event) {
         Map<Long, Long> eventViews = getEventsViews(List.of(event));
 
         EventFullDto eventFullDto = EventMapper.mapToFullDto(event);
 
-        setViewsToEvents(List.of(eventFullDto), eventViews);
+        setViewsToEventsDtos(List.of(eventFullDto), eventViews);
+        setRatingToEvent(eventFullDto);
 
         return eventFullDto;
     }
 
-    private List<EventFullDto> mapToFullDtoAndFetchViews(List<Event> events) {
+    private List<EventFullDto> mapToFullDtoAndFetchViewsAndRating(List<Event> events) {
         Map<Long, Long> eventsViews = getEventsViews(events);
 
         List<EventFullDto> eventFullDtos = events.stream()
                 .map(EventMapper::mapToFullDto)
                 .collect(Collectors.toList());
 
-        setViewsToEvents(eventFullDtos, eventsViews);
+        setViewsToEventsDtos(eventFullDtos, eventsViews);
 
         return eventFullDtos;
     }
@@ -459,6 +509,52 @@ public class EventServiceImpl implements EventService {
                     )
             );
         }
+    }
+
+    private void checkRater(User rater, Event event) {
+        if (rater.getId() == event.getInitiator().getId()) {
+            throw new ForbiddenException(
+                    "Forbidden",
+                    "User can not rate his own event"
+            );
+        }
+
+        requestRepository.findByUserEventAndStatus(
+                rater.getId(), event.getId(), RequestStatus.CONFIRMED).orElseThrow(
+                () -> new ForbiddenException(
+                        "Forbidden",
+                        String.format("There are no confirmed requests from user with id %d to event with id %d",
+                                rater.getId(), event.getId()))
+        );
+    }
+
+    private int defineRate(RateType rateType) {
+        switch (rateType) {
+            case LIKE:
+                return 1;
+            case DISLIKE:
+                return -1;
+            default:
+                throw new ForbiddenException("Rate type", String.format("Rate type %s incorrect", rateType.toString()));
+        }
+    }
+
+    private void setRatingToEvent(EventFullDto eventFullDto) {
+        Long rating = rateDAO.getRatingForEvent(eventFullDto.getId());
+        eventFullDto.setRating(rating);
+    }
+
+    private Map<Long, Long> getEventsRatings(List<Event> events) {
+        List<Long> eventsIds = events.stream()
+                .map(Event::getId)
+                .collect(Collectors.toList());
+
+        return rateDAO.getRatingsForEvents(eventsIds);
+    }
+
+    private void setRatingsToEventsDtos(List<? extends EventShortDto> eventDtos, Map<Long, Long> eventsRatings) {
+        eventDtos.forEach(eventShortDto -> eventShortDto.setRating(
+                eventsRatings.get(eventShortDto.getId()) != null ? eventsRatings.get(eventShortDto.getId()) : 0));
     }
 
     private void defineDefaultFields(NewEventDto newEventDto) {

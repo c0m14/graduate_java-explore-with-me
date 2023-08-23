@@ -3,7 +3,7 @@ package ru.practicum.ewm.main.event.dto.searchRequest;
 import java.util.Optional;
 
 public enum SearchSortOptionDto {
-    VIEWS, EVENT_DATE;
+    VIEWS, EVENT_DATE, RATING;
 
     public static Optional<SearchSortOptionDto> from(String stringSort) {
         for (SearchSortOptionDto sortOption : values()) {

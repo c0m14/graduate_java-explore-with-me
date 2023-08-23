@@ -15,7 +15,7 @@ public interface EventRepository {
 
     Optional<Event> findEventByInitiatorIdAndEventId(Long userId, Long eventId);
 
-    List<Event> findUsersEvents(Long userId, int offset, int size);
+    List<Event> findUserEvents(Long userId, int offset, int size);
 
     Event save(Event event);
 
@@ -34,4 +34,6 @@ public interface EventRepository {
     List<Event> findEventsByIds(Set<Long> eventsIds);
 
     Map<Long, List<Event>> findEventsForCompilations(List<Long> compilationsIds);
+
+    List<Event> findUsersEventsWithoutCategoryAndRequest(List<Long> usersIds);
 }

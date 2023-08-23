@@ -59,7 +59,7 @@ create table if not exists compilation (
     pinned boolean not null,
     title varchar not null,
     constraint pk_compilation primary key (compilation_id),
-    constraint compilation_title_unique unique(title)
+    constraint compilation_title_unique unique (title)
 );
 
 create table if not exists compilations_events (
@@ -71,3 +71,14 @@ create table if not exists compilations_events (
     constraint fk_compilations_events__event foreign key (event_id) references event (event_id)
         on delete cascade
 );
+
+create table if not exists user_event_rate (
+    user_id bigint not null,
+    event_id bigint not null,
+    rate int not null,
+    constraint fk_rate_users foreign key (user_id) references users (user_id)
+    on delete cascade,
+    constraint fk_rate_event foreign key (event_id) references event (event_id)
+    on delete cascade,
+    constraint user_event_combination_unique unique (user_id, event_id)
+)
