@@ -8,12 +8,13 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.ewm.main.event.dto.EventFullDto;
 import ru.practicum.ewm.main.event.dto.EventShortDto;
 import ru.practicum.ewm.main.event.dto.NewEventDto;
-import ru.practicum.ewm.main.event.dto.updateRequest.UpdateEventUserRequest;
+import ru.practicum.ewm.main.event.dto.updaterequest.UpdateEventUserRequestDto;
 import ru.practicum.ewm.main.event.service.EventService;
-import ru.practicum.ewm.main.request.dto.EventRequestStatusUpdateRequest;
-import ru.practicum.ewm.main.request.dto.EventRequestStatusUpdateResult;
+import ru.practicum.ewm.main.request.dto.EventRequestStatusUpdateRequestDto;
+import ru.practicum.ewm.main.request.dto.EventRequestStatusUpdateResultDto;
 import ru.practicum.ewm.main.request.dto.ParticipationRequestDto;
 import ru.practicum.ewm.main.request.service.RequestService;
+import ru.practicum.ewm.main.validator.ValidationMarker;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Positive;
@@ -31,6 +32,7 @@ public class PrivateEventController {
 
     @PostMapping("/users/{userId}/events")
     @ResponseStatus(HttpStatus.CREATED)
+    @Validated(ValidationMarker.OnCreate.class)
     public EventFullDto addEvent(
             @PathVariable("userId") Long userId,
             @Valid @RequestBody NewEventDto newEventDto) {
@@ -62,10 +64,11 @@ public class PrivateEventController {
     }
 
     @PatchMapping("/users/{userId}/events/{eventId}")
+    @Validated(ValidationMarker.OnUpdate.class)
     public EventFullDto updateEventByOwner(
             @PathVariable("userId") Long userId,
             @PathVariable("eventId") Long eventId,
-            @Valid @RequestBody UpdateEventUserRequest updateEventRequest) {
+            @Valid @RequestBody UpdateEventUserRequestDto updateEventRequest) {
         log.info("Start PATCH /users/{userId}/events/{eventId} with userId: {}, eventId: {}, " +
                 "updateEventRequest: {}", userId, eventId, updateEventRequest);
         EventFullDto updatedEvent = eventService.updateEventByUser(userId, eventId, updateEventRequest);
@@ -85,13 +88,13 @@ public class PrivateEventController {
     }
 
     @PatchMapping("/users/{userId}/events/{eventId}/requests")
-    public EventRequestStatusUpdateResult updateParticipationRequestForEventByOwner(
+    public EventRequestStatusUpdateResultDto updateParticipationRequestForEventByOwner(
             @PathVariable("userId") Long eventOwnerId,
             @PathVariable("eventId") Long eventId,
-            @RequestBody EventRequestStatusUpdateRequest statusUpdateRequest) {
+            @RequestBody EventRequestStatusUpdateRequestDto statusUpdateRequest) {
         log.info("Start PATCH /users/{userId}/events/{eventId}/requests with userId: {}, eventId: {}, " +
                 "statusUpdateRequest: {}", eventOwnerId, eventId, statusUpdateRequest);
-        EventRequestStatusUpdateResult statusUpdateResult =
+        EventRequestStatusUpdateResultDto statusUpdateResult =
                 requestService.updateRequestsStatuses(eventOwnerId, eventId, statusUpdateRequest);
         log.info("Finish PATCH /users/{userId}/events/{eventId}/requests with {}", statusUpdateResult);
         return statusUpdateResult;

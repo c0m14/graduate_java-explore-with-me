@@ -7,11 +7,10 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.ewm.main.category.model.Category;
-import ru.practicum.ewm.main.event.dto.searchRequest.AdminSearchParamsDto;
-import ru.practicum.ewm.main.event.dto.searchRequest.PublicSearchParamsDto;
-import ru.practicum.ewm.main.event.dto.searchRequest.SearchSortOptionDto;
+import ru.practicum.ewm.main.event.dto.searchrequest.AdminSearchParamsDto;
+import ru.practicum.ewm.main.event.dto.searchrequest.PublicSearchParamsDto;
+import ru.practicum.ewm.main.event.dto.searchrequest.SearchSortOptionDto;
 import ru.practicum.ewm.main.event.model.Event;
 import ru.practicum.ewm.main.event.model.EventState;
 import ru.practicum.ewm.main.event.model.Location;
@@ -44,7 +43,6 @@ public class EventRepositoryJDBCImpl implements EventRepository {
     }
 
     @Override
-    @Transactional
     public List<Event> findUsersEvents(Long userId, int offset, int size) {
         String query = getSelectQueryWithUserCategoryAndRequest() +
                 "WHERE e.initiator_id = :userId " +
@@ -66,7 +64,6 @@ public class EventRepositoryJDBCImpl implements EventRepository {
     }
 
     @Override
-    @Transactional
     public Optional<Event> findEventByInitiatorIdAndEventId(Long userId, Long eventId) {
         String query = getSelectQueryWithUserCategoryAndRequest() +
                 "WHERE e.event_id = :eventId " +
@@ -86,7 +83,6 @@ public class EventRepositoryJDBCImpl implements EventRepository {
     }
 
     @Override
-    @Transactional
     public void updateEvent(Event event) {
         String query = "UPDATE event " +
                 "SET title = :title, annotation = :annotation, description = :description, " +
@@ -114,7 +110,6 @@ public class EventRepositoryJDBCImpl implements EventRepository {
     }
 
     @Override
-    @Transactional
     public List<Event> findEventsPublic(PublicSearchParamsDto searchParams) {
         StringBuilder queryBuilder = getStandardSelectEventQueryBuilder();
         queryBuilder.append("WHERE e.state = :state ");
@@ -131,6 +126,9 @@ public class EventRepositoryJDBCImpl implements EventRepository {
         }
         if (searchParams.getPaid() != null) {
             queryBuilder.append("AND e.paid = :paid ");
+        }
+        if (searchParams.getOnlyAvailable() != null && searchParams.getOnlyAvailable()) {
+            queryBuilder.append("AND confirmed_requests < e.participant_limit ");
         }
         queryBuilder.append("GROUP BY e.event_id, e.event_date, c.category_id, u.user_id ");
         if (searchParams.getSortOption().equals(SearchSortOptionDto.EVENT_DATE)) {
@@ -162,7 +160,6 @@ public class EventRepositoryJDBCImpl implements EventRepository {
     }
 
     @Override
-    @Transactional
     public Optional<Event> findEventByIdAndState(Long eventId, EventState state) {
         String query = getSelectQueryWithUserCategoryAndRequest() +
                 "WHERE e.event_id = :eventId " +
@@ -181,7 +178,6 @@ public class EventRepositoryJDBCImpl implements EventRepository {
     }
 
     @Override
-    @Transactional
     public List<Event> findEventsAdmin(AdminSearchParamsDto searchParams) {
         StringBuilder queryBuilder = getStandardSelectEventQueryBuilder();
         if (hasWhereBlock(searchParams)) {
@@ -226,7 +222,6 @@ public class EventRepositoryJDBCImpl implements EventRepository {
     }
 
     @Override
-    @Transactional
     public Optional<Event> findEventById(Long eventId) {
         String query = getSelectQueryWithUserCategoryAndRequest() +
                 "WHERE e.event_id = :eventId " +
@@ -243,7 +238,6 @@ public class EventRepositoryJDBCImpl implements EventRepository {
     }
 
     @Override
-    @Transactional
     public Optional<Event> findEventByIdWithoutCategory(Long eventId) {
         String query = "SELECT e.event_id, e.title, e.annotation, e.description, e.category_id, e.event_date, " +
                 "e.initiator_id, e.paid, e.latitude, e.longitude, e.participant_limit, e.request_moderation, e.created_on, " +
@@ -256,6 +250,7 @@ public class EventRepositoryJDBCImpl implements EventRepository {
                 "AND r.request_status = :requestStatus " +
                 "WHERE e.event_id = :eventId " +
                 "GROUP BY e.event_id, e.event_date, u.user_id ";
+
         SqlParameterSource namedParams = new MapSqlParameterSource()
                 .addValue("eventId", eventId)
                 .addValue("requestStatus", RequestStatus.CONFIRMED.toString());
@@ -266,6 +261,19 @@ public class EventRepositoryJDBCImpl implements EventRepository {
         } catch (EmptyResultDataAccessException e) {
             return Optional.empty();
         }
+    }
+
+    @Override
+    public void lockEventForShare(Long eventId) {
+        String query = "SELECT event_id FROM event WHERE event_id = :eventId FOR SHARE";
+        SqlParameterSource namedParams = new MapSqlParameterSource("eventId", eventId);
+
+        try {
+            jdbcTemplate.queryForObject(query, namedParams, Long.class);
+        } catch (EmptyResultDataAccessException e) {
+
+        }
+
     }
 
     @Override

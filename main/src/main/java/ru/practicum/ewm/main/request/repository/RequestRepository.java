@@ -1,6 +1,6 @@
 package ru.practicum.ewm.main.request.repository;
 
-import ru.practicum.ewm.main.request.dto.EventRequestStatusUpdateRequest;
+import ru.practicum.ewm.main.request.dto.EventRequestStatusUpdateRequestDto;
 import ru.practicum.ewm.main.request.model.EventParticipationRequest;
 
 import java.util.List;
@@ -20,5 +20,5 @@ public interface RequestRepository {
 
     List<EventParticipationRequest> findRequestsForEvent(Long eventId, List<Long> requestsIds);
 
-    List<Long> updateRequestsStatusForEvent(Long eventId, EventRequestStatusUpdateRequest updateRequest);
+    List<Long> updateRequestsStatusForEvent(Long eventId, EventRequestStatusUpdateRequestDto updateRequest);
 }

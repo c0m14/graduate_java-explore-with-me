@@ -6,14 +6,17 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.ewm.main.event.dto.EventFullDto;
-import ru.practicum.ewm.main.event.dto.searchRequest.AdminSearchParamsDto;
-import ru.practicum.ewm.main.event.dto.updateRequest.UpdateEventAdminRequest;
+import ru.practicum.ewm.main.event.dto.searchrequest.AdminSearchParamsDto;
+import ru.practicum.ewm.main.event.dto.updaterequest.UpdateEventAdminRequestDto;
 import ru.practicum.ewm.main.event.model.EventState;
 import ru.practicum.ewm.main.event.service.EventService;
 import ru.practicum.ewm.main.exception.InvalidParamException;
+import ru.practicum.ewm.main.validator.ValidationMarker;
 import ru.practicum.ewm.statistic.dto.Formats;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Positive;
+import javax.validation.constraints.PositiveOrZero;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
@@ -35,8 +38,8 @@ public class AdminEventController {
             @DateTimeFormat(pattern = Formats.DATE_TIME_PATTERN) LocalDateTime rangeStart,
             @RequestParam(name = "rangeEnd", required = false)
             @DateTimeFormat(pattern = Formats.DATE_TIME_PATTERN) LocalDateTime rangeEnd,
-            @RequestParam(name = "from", required = false, defaultValue = "0") Integer from,
-            @RequestParam(name = "size", required = false, defaultValue = "10") Integer size
+            @PositiveOrZero @RequestParam(name = "from", required = false, defaultValue = "0") Integer from,
+            @Positive @RequestParam(name = "size", required = false, defaultValue = "10") Integer size
     ) {
         log.info("Start GET /admin/events with users: {}, states:{}, categories: {}, " +
                         "rangeStart: {}, rangeEnd: {}, from: {}, size: {}",
@@ -72,8 +75,9 @@ public class AdminEventController {
     }
 
     @PatchMapping("/admin/events/{eventId}")
+    @Validated(ValidationMarker.OnUpdate.class)
     public EventFullDto updateEvent(@PathVariable(name = "eventId") Long eventId,
-                                    @Valid @RequestBody UpdateEventAdminRequest updateRequest) {
+                                    @Valid @RequestBody UpdateEventAdminRequestDto updateRequest) {
         log.info("Start PATCH /admin/events/{eventId} with eventId: {}, updateRequest: {}", eventId, updateRequest);
         EventFullDto updatedEvent = eventService.updateEventByAdmin(eventId, updateRequest);
         log.info("Finish PATCH /admin/events/{eventId} with {}", updatedEvent);

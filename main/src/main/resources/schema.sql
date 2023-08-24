@@ -52,6 +52,7 @@ create table if not exists event_participation_request (
         on delete cascade,
     constraint event_user_unique unique(event_id, requester_id)
 );
+create index if not exists request_status_index on event_participation_request (request_status);
 
 create table if not exists compilation (
     compilation_id bigint generated always as identity not null,

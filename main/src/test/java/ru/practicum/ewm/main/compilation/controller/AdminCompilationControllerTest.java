@@ -12,7 +12,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.ewm.main.TestDataProvider;
 import ru.practicum.ewm.main.compilation.dto.NewCompilationDto;
-import ru.practicum.ewm.main.compilation.dto.UpdateCompilationRequest;
 import ru.practicum.ewm.main.compilation.service.CompilationService;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -36,8 +35,6 @@ class AdminCompilationControllerTest {
     private ArgumentCaptor<NewCompilationDto> newCompilationDtoArgumentCaptor;
     @Captor
     private ArgumentCaptor<Long> compilationIdArgumentCaptor;
-    @Captor
-    private ArgumentCaptor<UpdateCompilationRequest> updateRequestArgumentCaptor;
 
     @Test
     @SneakyThrows
@@ -92,25 +89,6 @@ class AdminCompilationControllerTest {
 
     @Test
     @SneakyThrows
-    void addCompilation_whenPinnedIsNull_thenStatusIsCreatedAndDefaultParamPassedToService() {
-        String body = "{\n" +
-                "\"title\": \"Title\"," +
-                "\"events\": [1]" +
-                "}";
-        boolean defaultPinned = false;
-
-        mvc.perform(post("/admin/compilations")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isCreated());
-
-        verify(compilationService, times(1))
-                .addCompilation(newCompilationDtoArgumentCaptor.capture());
-        assertThat(newCompilationDtoArgumentCaptor.getValue().isPinned(), equalTo(defaultPinned));
-    }
-
-    @Test
-    @SneakyThrows
     void deleteCompilation_whenInvoked_thenStatusIsNoContentAndParamsPassedToService() {
         Long compilationId = 0L;
 
@@ -126,7 +104,7 @@ class AdminCompilationControllerTest {
     @SneakyThrows
     void updateCompilation_whenInvoked_thenStatusIsOkAndParamsPassedToService() {
         Long compilationId = 0L;
-        UpdateCompilationRequest updateRequest = UpdateCompilationRequest.builder().build();
+        NewCompilationDto updateRequest = NewCompilationDto.builder().build();
 
         mvc.perform(patch("/admin/compilations/{compId}", compilationId)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -136,17 +114,17 @@ class AdminCompilationControllerTest {
         verify(compilationService, times(1))
                 .updateCompilation(
                         compilationIdArgumentCaptor.capture(),
-                        updateRequestArgumentCaptor.capture()
+                        newCompilationDtoArgumentCaptor.capture()
                 );
         assertThat(compilationIdArgumentCaptor.getValue(), equalTo(compilationId));
-        assertThat(updateRequestArgumentCaptor.getValue(), equalTo(updateRequest));
+        assertThat(newCompilationDtoArgumentCaptor.getValue(), equalTo(updateRequest));
     }
 
     @Test
     @SneakyThrows
     void updateCompilation_whenTitleIsBlank_thenStatusIsBadRequest() {
         Long compilationId = 0L;
-        UpdateCompilationRequest updateRequest = UpdateCompilationRequest.builder()
+        NewCompilationDto updateRequest = NewCompilationDto.builder()
                 .title(" ")
                 .build();
 
@@ -160,7 +138,7 @@ class AdminCompilationControllerTest {
     @SneakyThrows
     void updateCompilation_whenTitleIsMoreThan50_thenStatusIsBadRequest() {
         Long compilationId = 0L;
-        UpdateCompilationRequest updateRequest = UpdateCompilationRequest.builder()
+        NewCompilationDto updateRequest = NewCompilationDto.builder()
                 .title("t".repeat(51))
                 .build();
 

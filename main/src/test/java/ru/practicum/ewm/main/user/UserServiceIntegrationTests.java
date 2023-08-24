@@ -9,7 +9,7 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.jdbc.core.JdbcTemplate;
-import ru.practicum.ewm.main.user.dto.NewUserRequest;
+import ru.practicum.ewm.main.user.dto.NewUserRequestDto;
 import ru.practicum.ewm.main.user.dto.UserDto;
 import ru.practicum.ewm.main.user.model.User;
 import ru.practicum.ewm.main.user.repository.UserRepository;
@@ -46,7 +46,7 @@ class UserServiceIntegrationTests {
     @Test
     void addUser() {
         URI uri = URI.create(host + port + "/admin/users");
-        NewUserRequest newUser = new NewUserRequest();
+        NewUserRequestDto newUser = new NewUserRequestDto();
         newUser.setName("name");
         newUser.setEmail("email@email.com");
 

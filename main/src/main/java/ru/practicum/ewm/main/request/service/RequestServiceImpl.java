@@ -8,8 +8,8 @@ import ru.practicum.ewm.main.event.model.EventState;
 import ru.practicum.ewm.main.event.repository.EventRepository;
 import ru.practicum.ewm.main.exception.ForbiddenException;
 import ru.practicum.ewm.main.exception.NotExistsException;
-import ru.practicum.ewm.main.request.dto.EventRequestStatusUpdateRequest;
-import ru.practicum.ewm.main.request.dto.EventRequestStatusUpdateResult;
+import ru.practicum.ewm.main.request.dto.EventRequestStatusUpdateRequestDto;
+import ru.practicum.ewm.main.request.dto.EventRequestStatusUpdateResultDto;
 import ru.practicum.ewm.main.request.dto.ParticipationRequestDto;
 import ru.practicum.ewm.main.request.dto.RequestStatusUpdateDto;
 import ru.practicum.ewm.main.request.mapper.EventParticipationRequestMapper;
@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class RequestServiceImpl implements RequestService {
 
     private final RequestRepository requestRepository;
@@ -32,9 +33,10 @@ public class RequestServiceImpl implements RequestService {
     private final EventRepository eventRepository;
 
     @Override
+    @Transactional
     public ParticipationRequestDto addRequest(Long userId, Long eventId) {
         User requester = getUserFromDB(userId);
-        Event event = getEventFromDB(eventId);
+        Event event = getEventFromDB(eventId, true);
         checkEvent(event, userId);
 
         EventParticipationRequest request = EventParticipationRequest.builder()
@@ -61,6 +63,7 @@ public class RequestServiceImpl implements RequestService {
     }
 
     @Override
+    @Transactional
     public ParticipationRequestDto cancelRequest(Long userId, Long requestId) {
         EventParticipationRequest request = getRequestFromDbByIdAndOwner(userId, requestId);
 
@@ -84,7 +87,7 @@ public class RequestServiceImpl implements RequestService {
 
     @Override
     public List<ParticipationRequestDto> findRequestsToEvent(Long eventOwnerId, Long eventId) {
-        Event event = getEventFromDB(eventId);
+        Event event = getEventFromDB(eventId, false);
         checkIfUserOwnEvent(eventOwnerId, event);
 
         List<EventParticipationRequest> foundRequests = requestRepository.findRequestsForEvent(eventId);
@@ -96,11 +99,11 @@ public class RequestServiceImpl implements RequestService {
 
     @Override
     @Transactional
-    public EventRequestStatusUpdateResult updateRequestsStatuses(
+    public EventRequestStatusUpdateResultDto updateRequestsStatuses(
             Long eventOwnerId,
             Long eventId,
-            EventRequestStatusUpdateRequest updateStatusRequest) {
-        Event event = getEventFromDB(eventId);
+            EventRequestStatusUpdateRequestDto updateStatusRequest) {
+        Event event = getEventFromDB(eventId, true);
         checkIfUserOwnEvent(eventOwnerId, event);
 
         List<EventParticipationRequest> requests =
@@ -127,16 +130,25 @@ public class RequestServiceImpl implements RequestService {
     }
 
     private void checkIfUserExist(Long userId) {
-        getUserFromDB(userId);
+        if (!userRepository.userExists(userId)) {
+            throw new NotExistsException(
+                    "User",
+                    String.format("User with id %d not exists", userId)
+            );
+        }
     }
 
-    private Event getEventFromDB(Long eventId) {
-        return eventRepository.findEventByIdWithoutCategory(eventId).orElseThrow(
+    private Event getEventFromDB(Long eventId, boolean withLocking) {
+        Event foundEvent = eventRepository.findEventByIdWithoutCategory(eventId).orElseThrow(
                 () -> new NotExistsException(
                         "Event",
                         String.format("Event with id %d not exists", eventId)
                 )
         );
+        if (withLocking) {
+            eventRepository.lockEventForShare(eventId);
+        }
+        return foundEvent;
     }
 
     private EventParticipationRequest getRequestFromDbByIdAndOwner(Long userId, Long requestId) {
@@ -220,9 +232,9 @@ public class RequestServiceImpl implements RequestService {
         });
     }
 
-    private EventRequestStatusUpdateResult confirmRequests(
+    private EventRequestStatusUpdateResultDto confirmRequests(
             Event event,
-            EventRequestStatusUpdateRequest updateStatusRequest,
+            EventRequestStatusUpdateRequestDto updateStatusRequest,
             List<EventParticipationRequest> requests
     ) {
         checkIfParticipationLimitReached(event);
@@ -237,11 +249,11 @@ public class RequestServiceImpl implements RequestService {
                     .collect(Collectors.toList());
 
             List<Long> confirmedIds = requestRepository.updateRequestsStatusForEvent(event.getId(),
-                    new EventRequestStatusUpdateRequest(idsToConfirm, RequestStatusUpdateDto.CONFIRMED));
+                    new EventRequestStatusUpdateRequestDto(idsToConfirm, RequestStatusUpdateDto.CONFIRMED));
             List<Long> rejectedIds = requestRepository.updateRequestsStatusForEvent(event.getId(),
-                    new EventRequestStatusUpdateRequest(idsToReject, RequestStatusUpdateDto.REJECTED));
+                    new EventRequestStatusUpdateRequestDto(idsToReject, RequestStatusUpdateDto.REJECTED));
 
-            return EventRequestStatusUpdateResult.builder()
+            return EventRequestStatusUpdateResultDto.builder()
                     .confirmedRequests(
                             requests.stream()
                                     .filter(request -> confirmedIds.contains(request.getId()))
@@ -258,7 +270,7 @@ public class RequestServiceImpl implements RequestService {
         } else {
             List<Long> confirmedIds = requestRepository.updateRequestsStatusForEvent(event.getId(), updateStatusRequest);
 
-            return EventRequestStatusUpdateResult.builder()
+            return EventRequestStatusUpdateResultDto.builder()
                     .confirmedRequests(
                             requests.stream()
                                     .filter(request -> confirmedIds.contains(request.getId()))
@@ -269,14 +281,14 @@ public class RequestServiceImpl implements RequestService {
         }
     }
 
-    private EventRequestStatusUpdateResult rejectRequests(
+    private EventRequestStatusUpdateResultDto rejectRequests(
             Event event,
-            EventRequestStatusUpdateRequest updateStatusRequest,
+            EventRequestStatusUpdateRequestDto updateStatusRequest,
             List<EventParticipationRequest> requests
     ) {
         List<Long> rejectedIds = requestRepository.updateRequestsStatusForEvent(event.getId(), updateStatusRequest);
 
-        return EventRequestStatusUpdateResult.builder()
+        return EventRequestStatusUpdateResultDto.builder()
                 .rejectedRequests(
                         requests.stream()
                                 .filter(request -> rejectedIds.contains(request.getId()))

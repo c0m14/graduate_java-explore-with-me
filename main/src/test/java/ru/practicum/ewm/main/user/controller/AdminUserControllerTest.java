@@ -10,7 +10,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.ewm.main.user.dto.NewUserRequest;
+import ru.practicum.ewm.main.user.dto.NewUserRequestDto;
 import ru.practicum.ewm.main.user.service.UserService;
 
 import java.util.List;
@@ -32,7 +32,7 @@ class AdminUserControllerTest {
     @MockBean
     private UserService userService;
     @Captor
-    private ArgumentCaptor<NewUserRequest> newUserRequestArgumentCaptor;
+    private ArgumentCaptor<NewUserRequestDto> newUserRequestArgumentCaptor;
     @Captor
     private ArgumentCaptor<List<Long>> idsArgumentCaptor;
     @Captor
@@ -45,7 +45,7 @@ class AdminUserControllerTest {
     @Test
     @SneakyThrows
     void addUser_whenInvoked_thenStatusIsCreatedAndRequestPassedToService() {
-        NewUserRequest newUser = new NewUserRequest();
+        NewUserRequestDto newUser = new NewUserRequestDto();
         newUser.setName("name");
         newUser.setEmail("email@email.ru");
 
@@ -73,7 +73,7 @@ class AdminUserControllerTest {
     @Test
     @SneakyThrows
     void addUser_whenEmailMissing_thenStatusIsBadRequest() {
-        NewUserRequest newUser = new NewUserRequest();
+        NewUserRequestDto newUser = new NewUserRequestDto();
         newUser.setName("name");
 
         mvc.perform(post("/admin/users")
@@ -85,7 +85,7 @@ class AdminUserControllerTest {
     @Test
     @SneakyThrows
     void addUser_whenEmailWrongFormat_thenStatusIsBadRequest() {
-        NewUserRequest newUser = new NewUserRequest();
+        NewUserRequestDto newUser = new NewUserRequestDto();
         newUser.setName("name");
         newUser.setEmail("email");
 
@@ -98,7 +98,7 @@ class AdminUserControllerTest {
     @Test
     @SneakyThrows
     void addUser_whenEmailLengthLessThan6_thenStatusIsBadRequest() {
-        NewUserRequest newUser = new NewUserRequest();
+        NewUserRequestDto newUser = new NewUserRequestDto();
         newUser.setName("name");
         newUser.setEmail("e@e.r");
 
@@ -111,7 +111,7 @@ class AdminUserControllerTest {
     @Test
     @SneakyThrows
     void addUser_whenNameMissing_thenStatusIsBadRequest() {
-        NewUserRequest newUser = new NewUserRequest();
+        NewUserRequestDto newUser = new NewUserRequestDto();
         newUser.setEmail("email@email.ru");
 
         mvc.perform(post("/admin/users")
@@ -123,7 +123,7 @@ class AdminUserControllerTest {
     @Test
     @SneakyThrows
     void addUser_whenNameLengthLessThan2_thenStatusIsBadRequest() {
-        NewUserRequest newUser = new NewUserRequest();
+        NewUserRequestDto newUser = new NewUserRequestDto();
         newUser.setEmail("email@email.ru");
         newUser.setName("n");
 
@@ -136,7 +136,7 @@ class AdminUserControllerTest {
     @Test
     @SneakyThrows
     void addUser_whenNameLengthMoreThan250_thenStatusIsBadRequest() {
-        NewUserRequest newUser = new NewUserRequest();
+        NewUserRequestDto newUser = new NewUserRequestDto();
         newUser.setEmail("email@email.ru");
         newUser.setName("n".repeat(251));
 

@@ -15,7 +15,7 @@ import ru.practicum.ewm.main.event.model.EventState;
 import ru.practicum.ewm.main.event.repository.EventRepository;
 import ru.practicum.ewm.main.exception.ForbiddenException;
 import ru.practicum.ewm.main.exception.NotExistsException;
-import ru.practicum.ewm.main.request.dto.EventRequestStatusUpdateRequest;
+import ru.practicum.ewm.main.request.dto.EventRequestStatusUpdateRequestDto;
 import ru.practicum.ewm.main.request.dto.RequestStatusUpdateDto;
 import ru.practicum.ewm.main.request.model.EventParticipationRequest;
 import ru.practicum.ewm.main.request.model.RequestStatus;
@@ -50,7 +50,7 @@ class RequestServiceImplUnitTests {
     @Captor
     private ArgumentCaptor<Long> eventIdArgumentCaptor;
     @Captor
-    private ArgumentCaptor<EventRequestStatusUpdateRequest> updateStatusesArgumentCaptor;
+    private ArgumentCaptor<EventRequestStatusUpdateRequestDto> updateStatusesArgumentCaptor;
 
     @Test
     void addRequest_whenUserNotFound_thenNotExistExceptionThrown() {
@@ -269,8 +269,8 @@ class RequestServiceImplUnitTests {
     @Test
     void findUsersRequests_whenUserNotFound_thenNotExistExceptionThrown() {
         Long userId = 0L;
-        when(userRepository.findUserById(userId))
-                .thenReturn(Optional.empty());
+        when(userRepository.userExists(userId))
+                .thenReturn(false);
 
         Executable executable = () -> requestService.findUserRequests(userId);
 
@@ -399,7 +399,7 @@ class RequestServiceImplUnitTests {
     void updateRequestsStatuses_whenEventNotFound_thenNotExistsExceptionThrown() {
         Long eventOwner = 1L;
         Long eventId = 2L;
-        EventRequestStatusUpdateRequest statusUpdateRequest = EventRequestStatusUpdateRequest.builder().build();
+        EventRequestStatusUpdateRequestDto statusUpdateRequest = EventRequestStatusUpdateRequestDto.builder().build();
         when(eventRepository.findEventByIdWithoutCategory(eventId))
                 .thenReturn(Optional.empty());
 
@@ -417,7 +417,7 @@ class RequestServiceImplUnitTests {
         Long otherUserId = 2L;
         Long eventId = 0L;
         Event event = TestDataProvider.getValidNotSavedEvent(new User(eventOwner), new Category());
-        EventRequestStatusUpdateRequest statusUpdateRequest = EventRequestStatusUpdateRequest.builder().build();
+        EventRequestStatusUpdateRequestDto statusUpdateRequest = EventRequestStatusUpdateRequestDto.builder().build();
         when(eventRepository.findEventByIdWithoutCategory(eventId))
                 .thenReturn(Optional.of(event));
 
@@ -437,7 +437,7 @@ class RequestServiceImplUnitTests {
         Event event = TestDataProvider.getValidNotSavedEvent(new User(eventOwner), new Category());
         EventParticipationRequest request = TestDataProvider.getValidRequestToSave(new User(0L), event);
         request.setRequestStatus(RequestStatus.CONFIRMED);
-        EventRequestStatusUpdateRequest statusUpdateRequest = EventRequestStatusUpdateRequest.builder()
+        EventRequestStatusUpdateRequestDto statusUpdateRequest = EventRequestStatusUpdateRequestDto.builder()
                 .requestIds(requestsIds)
                 .status(RequestStatusUpdateDto.CONFIRMED)
                 .build();
@@ -462,7 +462,7 @@ class RequestServiceImplUnitTests {
         Event event = TestDataProvider.getValidNotSavedEvent(new User(eventOwner), new Category());
         EventParticipationRequest request = TestDataProvider.getValidRequestToSave(new User(0L), event);
         request.setRequestStatus(RequestStatus.REJECTED);
-        EventRequestStatusUpdateRequest statusUpdateRequest = EventRequestStatusUpdateRequest.builder()
+        EventRequestStatusUpdateRequestDto statusUpdateRequest = EventRequestStatusUpdateRequestDto.builder()
                 .requestIds(requestsIds)
                 .status(RequestStatusUpdateDto.CONFIRMED)
                 .build();
@@ -487,7 +487,7 @@ class RequestServiceImplUnitTests {
         Event event = TestDataProvider.getValidNotSavedEvent(new User(eventOwnerId), new Category());
         EventParticipationRequest request = TestDataProvider.getValidRequestToSave(new User(0L), event);
         request.setRequestStatus(RequestStatus.CANCELED);
-        EventRequestStatusUpdateRequest statusUpdateRequest = EventRequestStatusUpdateRequest.builder()
+        EventRequestStatusUpdateRequestDto statusUpdateRequest = EventRequestStatusUpdateRequestDto.builder()
                 .requestIds(requestsIds)
                 .status(RequestStatusUpdateDto.CONFIRMED)
                 .build();
@@ -517,7 +517,7 @@ class RequestServiceImplUnitTests {
         EventParticipationRequest request2 = TestDataProvider.getValidRequestToSave(new User(0L), event);
         request1.setRequestStatus(RequestStatus.PENDING);
         request2.setRequestStatus(RequestStatus.PENDING);
-        EventRequestStatusUpdateRequest statusUpdateRequest = EventRequestStatusUpdateRequest.builder()
+        EventRequestStatusUpdateRequestDto statusUpdateRequest = EventRequestStatusUpdateRequestDto.builder()
                 .status(RequestStatusUpdateDto.CONFIRMED)
                 .requestIds(requestsIds)
                 .build();
@@ -557,7 +557,7 @@ class RequestServiceImplUnitTests {
         EventParticipationRequest request2 = TestDataProvider.getValidRequestToSave(new User(0L), event);
         request1.setRequestStatus(RequestStatus.PENDING);
         request2.setRequestStatus(RequestStatus.PENDING);
-        EventRequestStatusUpdateRequest statusUpdateRequest = EventRequestStatusUpdateRequest.builder()
+        EventRequestStatusUpdateRequestDto statusUpdateRequest = EventRequestStatusUpdateRequestDto.builder()
                 .status(RequestStatusUpdateDto.CONFIRMED)
                 .requestIds(requestsIds)
                 .build();
@@ -595,7 +595,7 @@ class RequestServiceImplUnitTests {
         EventParticipationRequest request2 = TestDataProvider.getValidRequestToSave(new User(0L), event);
         request1.setRequestStatus(RequestStatus.PENDING);
         request2.setRequestStatus(RequestStatus.PENDING);
-        EventRequestStatusUpdateRequest statusUpdateRequest = EventRequestStatusUpdateRequest.builder()
+        EventRequestStatusUpdateRequestDto statusUpdateRequest = EventRequestStatusUpdateRequestDto.builder()
                 .status(RequestStatusUpdateDto.REJECTED)
                 .requestIds(requestsIds)
                 .build();

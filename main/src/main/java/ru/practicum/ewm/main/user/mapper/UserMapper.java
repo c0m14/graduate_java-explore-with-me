@@ -1,14 +1,14 @@
 package ru.practicum.ewm.main.user.mapper;
 
 import lombok.experimental.UtilityClass;
-import ru.practicum.ewm.main.user.dto.NewUserRequest;
+import ru.practicum.ewm.main.user.dto.NewUserRequestDto;
 import ru.practicum.ewm.main.user.dto.UserDto;
 import ru.practicum.ewm.main.user.dto.UserShortDto;
 import ru.practicum.ewm.main.user.model.User;
 
 @UtilityClass
 public class UserMapper {
-    public User mapToEntity(NewUserRequest userRequest) {
+    public User mapToEntity(NewUserRequestDto userRequest) {
         return new User(userRequest.getName(), userRequest.getEmail());
     }
 

@@ -8,10 +8,10 @@ import ru.practicum.ewm.main.compilation.model.Compilation;
 import ru.practicum.ewm.main.event.dto.EventFullDto;
 import ru.practicum.ewm.main.event.dto.EventShortDto;
 import ru.practicum.ewm.main.event.dto.NewEventDto;
-import ru.practicum.ewm.main.event.dto.updateRequest.AdminRequestStateAction;
-import ru.practicum.ewm.main.event.dto.updateRequest.UpdateEventAdminRequest;
-import ru.practicum.ewm.main.event.dto.updateRequest.UpdateEventUserRequest;
-import ru.practicum.ewm.main.event.dto.updateRequest.UserRequestStateAction;
+import ru.practicum.ewm.main.event.dto.updaterequest.AdminRequestStateActionDto;
+import ru.practicum.ewm.main.event.dto.updaterequest.UpdateEventAdminRequestDto;
+import ru.practicum.ewm.main.event.dto.updaterequest.UpdateEventUserRequestDto;
+import ru.practicum.ewm.main.event.dto.updaterequest.UserRequestStateActionDto;
 import ru.practicum.ewm.main.event.model.Event;
 import ru.practicum.ewm.main.event.model.EventState;
 import ru.practicum.ewm.main.event.model.Location;
@@ -116,8 +116,8 @@ public class TestDataProvider {
                 .build();
     }
 
-    public UpdateEventUserRequest getValidUpdateEventUserRequest() {
-        return UpdateEventUserRequest.builder()
+    public UpdateEventUserRequestDto getValidUpdateEventUserRequest() {
+        return UpdateEventUserRequestDto.builder()
                 .title("title")
                 .annotation("annotation".repeat(10))
                 .description("description".repeat(10))
@@ -126,7 +126,7 @@ public class TestDataProvider {
                 .paid(true)
                 .location(new Location(123.123f, 124.124f))
                 .requestModeration(true)
-                .stateAction(UserRequestStateAction.SEND_TO_REVIEW)
+                .stateAction(UserRequestStateActionDto.SEND_TO_REVIEW)
                 .build();
     }
 
@@ -148,8 +148,8 @@ public class TestDataProvider {
                 .build();
     }
 
-    public UpdateEventAdminRequest getValidUpdateEventAdminRequest() {
-        return UpdateEventAdminRequest.builder()
+    public UpdateEventAdminRequestDto getValidUpdateEventAdminRequest() {
+        return UpdateEventAdminRequestDto.builder()
                 .title("title")
                 .annotation("annotation".repeat(10))
                 .description("description".repeat(10))
@@ -158,7 +158,7 @@ public class TestDataProvider {
                 .paid(true)
                 .location(new Location(123.123f, 124.124f))
                 .requestModeration(true)
-                .stateAction(AdminRequestStateAction.PUBLISH_EVENT)
+                .stateAction(AdminRequestStateActionDto.PUBLISH_EVENT)
                 .build();
     }
 

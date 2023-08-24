@@ -2,6 +2,7 @@ package ru.practicum.ewm.main.category.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.ewm.main.category.dto.CategoryDto;
 import ru.practicum.ewm.main.category.dto.NewCategoryDto;
 import ru.practicum.ewm.main.category.mapper.CategoryMapper;
@@ -15,11 +16,13 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class CategoryServiceImpl implements CategoryService {
 
     private final CategoryRepository categoryRepository;
 
     @Override
+    @Transactional
     public CategoryDto addCategory(NewCategoryDto newCategoryDto) {
         Category newCategory = CategoryMapper.mapToEntity(newCategoryDto);
 
@@ -28,11 +31,13 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @Transactional
     public void deleteCategory(int categoryId) {
         categoryRepository.delete(categoryId);
     }
 
     @Override
+    @Transactional
     public CategoryDto updateCategory(int categoryId, CategoryDto updateCategoryRequest) {
         Category updatedCategory = CategoryMapper.mapToEntity(updateCategoryRequest);
         Map<String, Object> updateParams = Map.of(

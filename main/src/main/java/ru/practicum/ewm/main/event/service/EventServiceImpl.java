@@ -10,10 +10,10 @@ import ru.practicum.ewm.main.category.repository.CategoryRepository;
 import ru.practicum.ewm.main.event.dto.EventFullDto;
 import ru.practicum.ewm.main.event.dto.EventShortDto;
 import ru.practicum.ewm.main.event.dto.NewEventDto;
-import ru.practicum.ewm.main.event.dto.searchRequest.AdminSearchParamsDto;
-import ru.practicum.ewm.main.event.dto.searchRequest.PublicSearchParamsDto;
-import ru.practicum.ewm.main.event.dto.searchRequest.SearchSortOptionDto;
-import ru.practicum.ewm.main.event.dto.updateRequest.*;
+import ru.practicum.ewm.main.event.dto.searchrequest.AdminSearchParamsDto;
+import ru.practicum.ewm.main.event.dto.searchrequest.PublicSearchParamsDto;
+import ru.practicum.ewm.main.event.dto.searchrequest.SearchSortOptionDto;
+import ru.practicum.ewm.main.event.dto.updaterequest.*;
 import ru.practicum.ewm.main.event.mapper.EventMapper;
 import ru.practicum.ewm.main.event.model.Event;
 import ru.practicum.ewm.main.event.model.EventState;
@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class EventServiceImpl implements EventService {
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
@@ -45,10 +46,12 @@ public class EventServiceImpl implements EventService {
     private final StatisticClient statisticClient;
 
     @Override
+    @Transactional
     public EventFullDto addEvent(Long userId, NewEventDto newEventDto) {
         checkNewEventDate(newEventDto.getEventDate());
         User eventInitiator = getUserFromDb(userId);
         Category eventCategory = getCategoryFromDb(newEventDto.getCategory());
+        defineDefaultFields(newEventDto);
 
         Event event = EventMapper.mapToEntity(newEventDto, eventInitiator, eventCategory);
         event.setState(EventState.PENDING);
@@ -86,7 +89,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional
-    public EventFullDto updateEventByAdmin(Long eventId, UpdateEventAdminRequest updateEventRequest) {
+    public EventFullDto updateEventByAdmin(Long eventId, UpdateEventAdminRequestDto updateEventRequest) {
         Event eventToUpdate = eventRepository.findEventById(eventId).orElseThrow(
                 () -> new NotExistsException(
                         "Event",
@@ -102,7 +105,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional
-    public EventFullDto updateEventByUser(Long userId, Long eventId, UpdateEventUserRequest updateEventRequest) {
+    public EventFullDto updateEventByUser(Long userId, Long eventId, UpdateEventUserRequestDto updateEventRequest) {
         Event eventToUpdate = eventRepository.findEventByInitiatorIdAndEventId(userId, eventId).orElseThrow(
                 () -> new NotExistsException(
                         "Event",
@@ -118,7 +121,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<EventShortDto> findEvents(PublicSearchParamsDto searchParams, String ip) {
+    public List<EventShortDto> findEventsPublic(PublicSearchParamsDto searchParams, String ip) {
         checkSearchDates(searchParams);
         formatSearchTextToLowerCase(searchParams);
         searchParams.setState(EventState.PUBLISHED);
@@ -128,10 +131,6 @@ public class EventServiceImpl implements EventService {
         List<Event> foundEvents = eventRepository.findEventsPublic(searchParams);
         if (foundEvents.isEmpty()) {
             return List.of();
-        }
-        if (searchParams.getOnlyAvailable() != null && searchParams.getOnlyAvailable()) {
-            foundEvents = foundEvents.stream().filter(this::ifParticipationLimitNotReached)
-                    .collect(Collectors.toList());
         }
 
         List<EventShortDto> eventShortDtos = mapToShortDtoAndFetchViews(foundEvents);
@@ -172,7 +171,7 @@ public class EventServiceImpl implements EventService {
 
     private void checkIfAvailableForUpdate(
             Event eventToUpdate,
-            UpdateEventRequest updatedRequest,
+            NewEventDto updatedRequest,
             UpdateType updateType) {
 
         if (updateType.equals(UpdateType.USER)) {
@@ -181,13 +180,13 @@ public class EventServiceImpl implements EventService {
         }
 
         if (updateType.equals(UpdateType.ADMIN)) {
-            if (((UpdateEventAdminRequest) updatedRequest).getStateAction() == null) {
+            if (((UpdateEventAdminRequestDto) updatedRequest).getStateAction() == null) {
                 checkEventDate(eventToUpdate, updatedRequest, updateType);
             } else {
-                AdminRequestStateAction stateAction = ((UpdateEventAdminRequest) updatedRequest).getStateAction();
+                AdminRequestStateActionDto stateAction = ((UpdateEventAdminRequestDto) updatedRequest).getStateAction();
                 checkEventStateAdmin(eventToUpdate.getState(), stateAction);
 
-                if (stateAction.equals(AdminRequestStateAction.PUBLISH_EVENT)) {
+                if (stateAction.equals(AdminRequestStateActionDto.PUBLISH_EVENT)) {
                     checkEventDate(eventToUpdate, updatedRequest, updateType);
                 }
             }
@@ -206,7 +205,7 @@ public class EventServiceImpl implements EventService {
         }
     }
 
-    private void checkEventDate(Event eventToUpdate, UpdateEventRequest updatedRequest, UpdateType updateType) {
+    private void checkEventDate(Event eventToUpdate, NewEventDto updatedRequest, UpdateType updateType) {
         LocalDateTime checkedDate;
         if (updatedRequest != null && updatedRequest.getEventDate() != null) {
             checkedDate = updatedRequest.getEventDate();
@@ -240,8 +239,8 @@ public class EventServiceImpl implements EventService {
         }
     }
 
-    private void checkEventStateAdmin(EventState currentState, AdminRequestStateAction stateAction) {
-        if (stateAction.equals(AdminRequestStateAction.REJECT_EVENT)) {
+    private void checkEventStateAdmin(EventState currentState, AdminRequestStateActionDto stateAction) {
+        if (stateAction.equals(AdminRequestStateActionDto.REJECT_EVENT)) {
             if (currentState.equals(EventState.PUBLISHED)) {
                 throw new ForbiddenException(
                         "Forbidden",
@@ -249,7 +248,7 @@ public class EventServiceImpl implements EventService {
                 );
             }
         }
-        if (stateAction.equals(AdminRequestStateAction.PUBLISH_EVENT)) {
+        if (stateAction.equals(AdminRequestStateActionDto.PUBLISH_EVENT)) {
             if (!currentState.equals((EventState.PENDING))) {
                 throw new ForbiddenException(
                         "Forbidden",
@@ -270,7 +269,12 @@ public class EventServiceImpl implements EventService {
     }
 
     private void checkIfUserExist(Long userId) {
-        getUserFromDb(userId);
+        if (!userRepository.userExists(userId)) {
+            throw new NotExistsException(
+                    "User",
+                    String.format("User with id %d not exists", userId)
+            );
+        }
     }
 
     private Category getCategoryFromDb(int categoryId) {
@@ -314,7 +318,7 @@ public class EventServiceImpl implements EventService {
                 eventsViews.get(eventShortDto.getId()) != null ? eventsViews.get(eventShortDto.getId()) : 0));
     }
 
-    private void updateEventFields(Event eventToUpdate, UpdateEventRequest updateRequest, UpdateType updateType) {
+    private void updateEventFields(Event eventToUpdate, NewEventDto updateRequest, UpdateType updateType) {
         if (updateRequest.getTitle() != null) {
             eventToUpdate.setTitle(updateRequest.getTitle());
         }
@@ -344,7 +348,7 @@ public class EventServiceImpl implements EventService {
             eventToUpdate.setParticipantLimit(updateRequest.getParticipantLimit());
         }
         if (updateType.equals(UpdateType.USER)) {
-            UserRequestStateAction stateAction = ((UpdateEventUserRequest) updateRequest).getStateAction();
+            UserRequestStateActionDto stateAction = ((UpdateEventUserRequestDto) updateRequest).getStateAction();
             if (stateAction != null) {
                 switch (stateAction) {
                     case CANCEL_REVIEW:
@@ -356,7 +360,7 @@ public class EventServiceImpl implements EventService {
                 }
             }
         } else if (updateType.equals(UpdateType.ADMIN)) {
-            AdminRequestStateAction stateAction = ((UpdateEventAdminRequest) updateRequest).getStateAction();
+            AdminRequestStateActionDto stateAction = ((UpdateEventAdminRequestDto) updateRequest).getStateAction();
             if (stateAction != null) {
                 switch (stateAction) {
                     case REJECT_EVENT:
@@ -445,10 +449,6 @@ public class EventServiceImpl implements EventService {
         return eventFullDtos;
     }
 
-    private boolean ifParticipationLimitNotReached(Event event) {
-        return event.getParticipantLimit() == 0 || event.getConfirmedRequests() >= event.getParticipantLimit();
-    }
-
     private void checkSearchDates(PublicSearchParamsDto searchParams) {
         if (searchParams.getRangeEnd() != null && searchParams.getRangeStart() != null &&
                 searchParams.getRangeEnd().isBefore(searchParams.getRangeStart())) {
@@ -458,6 +458,18 @@ public class EventServiceImpl implements EventService {
                             searchParams.getRangeStart(), searchParams.getRangeEnd()
                     )
             );
+        }
+    }
+
+    private void defineDefaultFields(NewEventDto newEventDto) {
+        if (newEventDto.getPaid() == null) {
+            newEventDto.setPaid(false);
+        }
+        if (newEventDto.getParticipantLimit() == null) {
+            newEventDto.setParticipantLimit(0);
+        }
+        if (newEventDto.getRequestModeration() == null) {
+            newEventDto.setRequestModeration(true);
         }
     }
 

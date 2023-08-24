@@ -12,7 +12,6 @@ import ru.practicum.ewm.main.TestDataProvider;
 import ru.practicum.ewm.main.category.model.Category;
 import ru.practicum.ewm.main.compilation.dto.CompilationDto;
 import ru.practicum.ewm.main.compilation.dto.NewCompilationDto;
-import ru.practicum.ewm.main.compilation.dto.UpdateCompilationRequest;
 import ru.practicum.ewm.main.compilation.model.Compilation;
 import ru.practicum.ewm.main.compilation.repository.CompilationRepository;
 import ru.practicum.ewm.main.event.model.Event;
@@ -58,7 +57,7 @@ class CompilationServiceUnitTests {
     @Test
     void updateCompilation_whenCompilationNotFound_thenNotExistsExceptionThrown() {
         Long compilationId = 0L;
-        UpdateCompilationRequest updateRequest = UpdateCompilationRequest.builder().build();
+        NewCompilationDto updateRequest = NewCompilationDto.builder().build();
         when(compilationRepository.findByIdWithoutEvents(compilationId))
                 .thenReturn(Optional.empty());
 
@@ -71,7 +70,7 @@ class CompilationServiceUnitTests {
     void updateCompilation_whenNewEventsNotFound_thenForbiddenExceptionThrown() {
         Long compilationId = 0L;
         Long newEventId = 1L;
-        UpdateCompilationRequest updateRequest = UpdateCompilationRequest.builder()
+        NewCompilationDto updateRequest = NewCompilationDto.builder()
                 .events(Set.of(newEventId))
                 .build();
         Compilation compilation = TestDataProvider.getValidCompilationToSave(List.of());
@@ -89,7 +88,7 @@ class CompilationServiceUnitTests {
     void updateCompilation_whenEventsUpdate_thenOldEventsRecordsClearedByCompilationId() {
         Long compilationId = 0L;
         Long newEventId = 1L;
-        UpdateCompilationRequest updateRequest = UpdateCompilationRequest.builder()
+        NewCompilationDto updateRequest = NewCompilationDto.builder()
                 .events(Set.of(newEventId))
                 .build();
         Compilation compilation = TestDataProvider.getValidCompilationToSave(List.of());
@@ -114,7 +113,7 @@ class CompilationServiceUnitTests {
     void updateCompilation_whenEventsUpdate_thenNewEventsRecordsAddedByCompilationId() {
         Long compilationId = 0L;
         Long newEventId = 1L;
-        UpdateCompilationRequest updateRequest = UpdateCompilationRequest.builder()
+        NewCompilationDto updateRequest = NewCompilationDto.builder()
                 .events(Set.of(newEventId))
                 .build();
         Compilation compilation = TestDataProvider.getValidCompilationToSave(List.of());
@@ -139,7 +138,7 @@ class CompilationServiceUnitTests {
     void updateCompilation_whenEventsUpdate_thenCompilationWithNewEventsPassedToRepository() {
         Long compilationId = 0L;
         Long newEventId = 1L;
-        UpdateCompilationRequest updateRequest = UpdateCompilationRequest.builder()
+        NewCompilationDto updateRequest = NewCompilationDto.builder()
                 .events(Set.of(newEventId))
                 .build();
         Compilation compilation = TestDataProvider.getValidCompilationToSave(List.of());
@@ -165,7 +164,7 @@ class CompilationServiceUnitTests {
     void updateCompilation_whenTitleUpdate_thenCompilationWithNewTitlePassedToRepository() {
         Long compilationId = 0L;
         String newTitle = "new title";
-        UpdateCompilationRequest updateRequest = UpdateCompilationRequest.builder()
+        NewCompilationDto updateRequest = NewCompilationDto.builder()
                 .title(newTitle)
                 .build();
         Compilation compilation = TestDataProvider.getValidCompilationToSave(List.of());
@@ -188,7 +187,7 @@ class CompilationServiceUnitTests {
     void updateCompilation_whenPinnedUpdate_thenCompilationWithNewPinnedPassedToRepository() {
         Long compilationId = 0L;
         boolean newPinned = true;
-        UpdateCompilationRequest updateRequest = UpdateCompilationRequest.builder()
+        NewCompilationDto updateRequest = NewCompilationDto.builder()
                 .pinned(newPinned)
                 .build();
         Compilation compilation = TestDataProvider.getValidCompilationToSave(List.of());

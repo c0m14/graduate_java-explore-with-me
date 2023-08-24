@@ -1,7 +1,7 @@
 package ru.practicum.ewm.main.event.repository;
 
-import ru.practicum.ewm.main.event.dto.searchRequest.AdminSearchParamsDto;
-import ru.practicum.ewm.main.event.dto.searchRequest.PublicSearchParamsDto;
+import ru.practicum.ewm.main.event.dto.searchrequest.AdminSearchParamsDto;
+import ru.practicum.ewm.main.event.dto.searchrequest.PublicSearchParamsDto;
 import ru.practicum.ewm.main.event.model.Event;
 import ru.practicum.ewm.main.event.model.EventState;
 
@@ -28,6 +28,8 @@ public interface EventRepository {
     Optional<Event> findEventById(Long eventId);
 
     Optional<Event> findEventByIdWithoutCategory(Long eventId);
+
+    void lockEventForShare(Long eventId);
 
     List<Event> findEventsByIds(Set<Long> eventsIds);
 

@@ -97,6 +97,14 @@ public class UserRepositoryJDBCImpl implements UserRepository {
         }
     }
 
+    @Override
+    public Boolean userExists(Long userId) {
+        String query = "SELECT EXISTS(SELECT user_id FROM users WHERE user_id = :userId)";
+        SqlParameterSource namedParams = new MapSqlParameterSource("userId", userId);
+
+        return jdbcTemplate.queryForObject(query, namedParams, Boolean.class);
+    }
+
     private User mapRowToUser(ResultSet resultSet, int rowNum) throws SQLException {
         User user = new User();
         user.setId(resultSet.getLong("user_id"));

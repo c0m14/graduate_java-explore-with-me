@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.validator.constraints.Length;
+import ru.practicum.ewm.main.validator.NullOrNotBlank;
+import ru.practicum.ewm.main.validator.ValidationMarker;
 
 import javax.validation.constraints.NotBlank;
 import java.util.Set;
@@ -16,10 +18,10 @@ import java.util.Set;
 public class NewCompilationDto {
 
     private Set<Long> events;
+    private Boolean pinned;
 
-    private boolean pinned = false;
-
-    @NotBlank
+    @NotBlank(groups = ValidationMarker.OnCreate.class)
+    @NullOrNotBlank(groups = ValidationMarker.OnUpdate.class)
     @Length(max = 50)
     private String title;
 }

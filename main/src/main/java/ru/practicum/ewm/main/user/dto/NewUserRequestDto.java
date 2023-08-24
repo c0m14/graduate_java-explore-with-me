@@ -8,7 +8,7 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 @Data
-public class NewUserRequest {
+public class NewUserRequestDto {
 
     @NotNull
     @Email

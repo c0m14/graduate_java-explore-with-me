@@ -2,11 +2,13 @@ package ru.practicum.ewm.main.event.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.validator.constraints.Length;
 import ru.practicum.ewm.main.event.model.Location;
+import ru.practicum.ewm.main.validator.NullOrNotBlank;
+import ru.practicum.ewm.main.validator.ValidationMarker;
 
 import javax.validation.constraints.Future;
 import javax.validation.constraints.NotBlank;
@@ -14,36 +16,39 @@ import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
 @Data
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 public class NewEventDto {
-    @NotBlank
+    @NotBlank(groups = ValidationMarker.OnCreate.class)
+    @NullOrNotBlank(groups = ValidationMarker.OnUpdate.class)
     @Length(min = 3, max = 120)
     private String title;
 
-    @NotBlank
+    @NotBlank(groups = ValidationMarker.OnCreate.class)
+    @NullOrNotBlank(groups = ValidationMarker.OnUpdate.class)
     @Length(min = 20, max = 2000)
     private String annotation;
 
-    @NotBlank
+    @NotBlank(groups = ValidationMarker.OnCreate.class)
+    @NullOrNotBlank(groups = ValidationMarker.OnUpdate.class)
     @Length(min = 20, max = 7000)
     private String description;
 
-    @NotNull
+    @NotNull(groups = ValidationMarker.OnCreate.class)
     private Integer category;
 
-    @NotNull
+    @NotNull(groups = ValidationMarker.OnCreate.class)
     @Future
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime eventDate;
 
-    private boolean paid = false;
+    private Boolean paid;
 
-    @NotNull
+    @NotNull(groups = ValidationMarker.OnCreate.class)
     private Location location;
 
-    private int participantLimit = 0;
+    private Integer participantLimit;
 
-    private boolean requestModeration = true;
+    private Boolean requestModeration;
 }

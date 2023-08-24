@@ -3,19 +3,22 @@ package ru.practicum.ewm.main.event.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import ru.practicum.ewm.main.event.dto.EventFullDto;
 import ru.practicum.ewm.main.event.dto.EventShortDto;
-import ru.practicum.ewm.main.event.dto.searchRequest.PublicSearchParamsDto;
-import ru.practicum.ewm.main.event.dto.searchRequest.SearchSortOptionDto;
+import ru.practicum.ewm.main.event.dto.searchrequest.PublicSearchParamsDto;
+import ru.practicum.ewm.main.event.dto.searchrequest.SearchSortOptionDto;
 import ru.practicum.ewm.main.event.service.EventService;
 import ru.practicum.ewm.main.exception.InvalidParamException;
 import ru.practicum.ewm.statistic.dto.Formats;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.constraints.Positive;
+import javax.validation.constraints.PositiveOrZero;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -23,6 +26,7 @@ import java.util.Set;
 @RestController
 @Slf4j
 @RequiredArgsConstructor
+@Validated
 public class PublicEventController {
 
     private final EventService eventService;
@@ -41,8 +45,8 @@ public class PublicEventController {
 
             @RequestParam(name = "onlyAvailable", required = false, defaultValue = "false") Boolean onlyAvailable,
             @RequestParam(name = "sort", required = false) String sort,
-            @RequestParam(name = "from", required = false, defaultValue = "0") Integer from,
-            @RequestParam(name = "size", required = false, defaultValue = "10") Integer size,
+            @PositiveOrZero @RequestParam(name = "from", required = false, defaultValue = "0") Integer from,
+            @Positive @RequestParam(name = "size", required = false, defaultValue = "10") Integer size,
             HttpServletRequest httpServletRequest
     ) {
         log.info("Start GET /events with text: {}, categories: {}, paid: {}, rangeStart: {}, rangeEnd: {}," +
@@ -65,7 +69,7 @@ public class PublicEventController {
                 .from(from)
                 .size(size)
                 .build();
-        List<EventShortDto> foundEvents = eventService.findEvents(searchParams, httpServletRequest.getRemoteAddr());
+        List<EventShortDto> foundEvents = eventService.findEventsPublic(searchParams, httpServletRequest.getRemoteAddr());
         log.info("Finish GET /events with {}", foundEvents);
         return foundEvents;
     }

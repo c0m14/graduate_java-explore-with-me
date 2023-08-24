@@ -8,7 +8,6 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.ewm.main.compilation.model.Compilation;
 import ru.practicum.ewm.main.event.model.Event;
 import ru.practicum.ewm.main.exception.ForbiddenException;
@@ -28,7 +27,6 @@ public class CompilationRepositoryJDBCImpl implements CompilationRepository {
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
     @Override
-    @Transactional
     public Compilation save(Compilation compilation) {
         SimpleJdbcInsert simpleJdbcInsert = new SimpleJdbcInsert(jdbcTemplate.getJdbcTemplate())
                 .withTableName("compilation")

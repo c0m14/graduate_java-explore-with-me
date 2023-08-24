@@ -60,7 +60,7 @@ class PublicCategoryControllerTest {
         int defaultFrom = 0;
         int size = 5;
 
-        mvc.perform(get("/categories?&size={size}", size))
+        mvc.perform(get("/categories?size={size}", size))
                 .andExpect(status().isOk());
 
         verify(categoryService, times(1))
@@ -79,7 +79,7 @@ class PublicCategoryControllerTest {
         int from = 1;
         int defaultSize = 10;
 
-        mvc.perform(get("/categories?&from={from}", from))
+        mvc.perform(get("/categories?from={from}", from))
                 .andExpect(status().isOk());
 
         verify(categoryService, times(1))
@@ -90,6 +90,39 @@ class PublicCategoryControllerTest {
 
         assertThat(fromArgumentCaptor.getValue(), equalTo(from));
         assertThat(sizeArgumentCaptor.getValue(), equalTo(defaultSize));
+    }
+
+    @Test
+    @SneakyThrows
+    void getCategories_whenFromNegative_thenStatusBadRequest() {
+        int from = -1;
+        int size = 10;
+
+        mvc.perform(get("/categories?from={from}&size={size}", from, size))
+                .andExpect(status().isBadRequest());
+
+    }
+
+    @Test
+    @SneakyThrows
+    void getCategories_whenSizeIsZero_thenStatusBadRequest() {
+        int from = 0;
+        int size = 0;
+
+        mvc.perform(get("/categories?from={from}&size={size}", from, size))
+                .andExpect(status().isBadRequest());
+
+    }
+
+    @Test
+    @SneakyThrows
+    void getCategories_whenSizeIsNegative_thenStatusBadRequest() {
+        int from = 0;
+        int size = -1;
+
+        mvc.perform(get("/categories?from={from}&size={size}", from, size))
+                .andExpect(status().isBadRequest());
+
     }
 
     @Test

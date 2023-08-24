@@ -10,7 +10,7 @@ import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Component;
 import ru.practicum.ewm.main.event.model.Event;
 import ru.practicum.ewm.main.exception.ForbiddenException;
-import ru.practicum.ewm.main.request.dto.EventRequestStatusUpdateRequest;
+import ru.practicum.ewm.main.request.dto.EventRequestStatusUpdateRequestDto;
 import ru.practicum.ewm.main.request.model.EventParticipationRequest;
 import ru.practicum.ewm.main.request.model.RequestStatus;
 import ru.practicum.ewm.main.user.model.User;
@@ -129,7 +129,7 @@ public class RequestRepositoryJDCBImpl implements RequestRepository {
     }
 
     @Override
-    public List<Long> updateRequestsStatusForEvent(Long eventId, EventRequestStatusUpdateRequest updateRequest) {
+    public List<Long> updateRequestsStatusForEvent(Long eventId, EventRequestStatusUpdateRequestDto updateRequest) {
         String query = "UPDATE event_participation_request " +
                 "SET request_status = :status " +
                 "WHERE event_id = :eventId " +

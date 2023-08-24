@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.ewm.main.compilation.dto.CompilationDto;
 import ru.practicum.ewm.main.compilation.dto.NewCompilationDto;
-import ru.practicum.ewm.main.compilation.dto.UpdateCompilationRequest;
 import ru.practicum.ewm.main.compilation.mapper.CompilationMapper;
 import ru.practicum.ewm.main.compilation.model.Compilation;
 import ru.practicum.ewm.main.compilation.repository.CompilationRepository;
@@ -22,12 +21,14 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class CompilationServiceImpl implements CompilationService {
 
     private final EventRepository eventRepository;
     private final CompilationRepository compilationRepository;
 
     @Override
+    @Transactional
     public CompilationDto addCompilation(NewCompilationDto newCompilationDto) {
         List<Event> events;
         if (newCompilationDto.getEvents() != null && !newCompilationDto.getEvents().isEmpty()) {
@@ -39,7 +40,7 @@ public class CompilationServiceImpl implements CompilationService {
 
         Compilation compilation = Compilation.builder()
                 .events(events)
-                .pinned(newCompilationDto.isPinned())
+                .pinned(newCompilationDto.getPinned() != null ? newCompilationDto.getPinned() : false)
                 .title(newCompilationDto.getTitle())
                 .build();
 
@@ -52,13 +53,14 @@ public class CompilationServiceImpl implements CompilationService {
     }
 
     @Override
+    @Transactional
     public void deleteCompilation(Long compilationId) {
         compilationRepository.deleteById(compilationId);
     }
 
     @Override
     @Transactional
-    public CompilationDto updateCompilation(Long compilationId, UpdateCompilationRequest updateCompilationRequest) {
+    public CompilationDto updateCompilation(Long compilationId, NewCompilationDto updateCompilationRequest) {
         Compilation compilation = getCompilationFromDbById(compilationId);
 
         updateCompilationFields(compilation, updateCompilationRequest);
@@ -78,7 +80,6 @@ public class CompilationServiceImpl implements CompilationService {
     }
 
     @Override
-    @Transactional
     public List<CompilationDto> findCompilations(boolean pinned, int from, int size) {
         List<Compilation> compilationsWithoutEvents =
                 compilationRepository.findCompilationsWithoutEvents(pinned, from, size);
@@ -106,7 +107,6 @@ public class CompilationServiceImpl implements CompilationService {
     }
 
     @Override
-    @Transactional
     public CompilationDto findById(Long compilationId) {
         Compilation compilation = getCompilationFromDbById(compilationId);
         Map<Long, List<Event>> compilationsEventsMap =
@@ -141,7 +141,7 @@ public class CompilationServiceImpl implements CompilationService {
                 ));
     }
 
-    private void updateCompilationFields(Compilation compilation, UpdateCompilationRequest updateRequest) {
+    private void updateCompilationFields(Compilation compilation, NewCompilationDto updateRequest) {
         if (updateRequest.getEvents() != null) {
             List<Event> events = eventRepository.findEventsByIds(updateRequest.getEvents());
             checkEvents(events);

@@ -7,8 +7,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.ewm.main.compilation.dto.CompilationDto;
 import ru.practicum.ewm.main.compilation.dto.NewCompilationDto;
-import ru.practicum.ewm.main.compilation.dto.UpdateCompilationRequest;
 import ru.practicum.ewm.main.compilation.service.CompilationService;
+import ru.practicum.ewm.main.validator.ValidationMarker;
 
 import javax.validation.Valid;
 
@@ -22,6 +22,7 @@ public class AdminCompilationController {
 
     @PostMapping("/admin/compilations")
     @ResponseStatus(HttpStatus.CREATED)
+    @Validated(ValidationMarker.OnCreate.class)
     public CompilationDto addCompilation(@Valid @RequestBody NewCompilationDto newCompilation) {
         log.info("Start POST /admin/compilations with {}", newCompilation);
         CompilationDto addedCompilation = compilationService.addCompilation(newCompilation);
@@ -38,8 +39,9 @@ public class AdminCompilationController {
     }
 
     @PatchMapping("/admin/compilations/{compId}")
+    @Validated(ValidationMarker.OnUpdate.class)
     public CompilationDto updateCompilation(@PathVariable(name = "compId") Long compilationId,
-                                            @Valid @RequestBody UpdateCompilationRequest updateRequest) {
+                                            @Valid @RequestBody NewCompilationDto updateRequest) {
         log.info("Start PATCH /admin/compilations/{compId} with id: {}, updateRequest: {}",
                 compilationId, updateRequest);
         CompilationDto updatedCompilation = compilationService.updateCompilation(compilationId, updateRequest);

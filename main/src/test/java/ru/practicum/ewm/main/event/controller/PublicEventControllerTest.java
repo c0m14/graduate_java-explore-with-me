@@ -8,8 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.ewm.main.event.dto.searchRequest.PublicSearchParamsDto;
-import ru.practicum.ewm.main.event.dto.searchRequest.SearchSortOptionDto;
+import ru.practicum.ewm.main.event.dto.searchrequest.PublicSearchParamsDto;
+import ru.practicum.ewm.main.event.dto.searchrequest.SearchSortOptionDto;
 import ru.practicum.ewm.main.event.service.EventService;
 import ru.practicum.ewm.statistic.dto.Formats;
 
@@ -58,7 +58,7 @@ class PublicEventControllerTest {
                 .andExpect(status().isOk());
 
         verify(eventService, times(1))
-                .findEvents(searchParamsArgumentCaptor.capture(), anyString());
+                .findEventsPublic(searchParamsArgumentCaptor.capture(), anyString());
         assertThat(searchParamsArgumentCaptor.getValue().getText(), equalTo(text));
         assertThat(searchParamsArgumentCaptor.getValue().getCategoriesIds(), equalTo(Set.of(Integer.valueOf(categories))));
         assertThat(searchParamsArgumentCaptor.getValue().getPaid(), equalTo(paid));
