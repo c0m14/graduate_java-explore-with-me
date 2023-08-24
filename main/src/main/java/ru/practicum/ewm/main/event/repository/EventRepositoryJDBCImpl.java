@@ -14,6 +14,7 @@ import ru.practicum.ewm.main.event.dto.searchrequest.SearchSortOptionDto;
 import ru.practicum.ewm.main.event.model.Event;
 import ru.practicum.ewm.main.event.model.EventState;
 import ru.practicum.ewm.main.event.model.Location;
+import ru.practicum.ewm.main.exception.NotExistsException;
 import ru.practicum.ewm.main.request.model.RequestStatus;
 import ru.practicum.ewm.main.user.model.User;
 
@@ -271,7 +272,10 @@ public class EventRepositoryJDBCImpl implements EventRepository {
         try {
             jdbcTemplate.queryForObject(query, namedParams, Long.class);
         } catch (EmptyResultDataAccessException e) {
-
+            throw new NotExistsException(
+                    "Event",
+                    String.format("Event with id %d not exists", eventId)
+            );
         }
 
     }
