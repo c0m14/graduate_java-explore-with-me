@@ -10,9 +10,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.ewm.main.event.dto.searchrequest.PublicSearchParamsDto;
 import ru.practicum.ewm.main.event.dto.searchrequest.SearchSortOptionDto;
+import ru.practicum.ewm.main.event.model.RateType;
 import ru.practicum.ewm.main.event.service.EventService;
 import ru.practicum.ewm.statistic.dto.Formats;
-import ru.practicum.ewm.main.event.model.RateType;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

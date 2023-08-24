@@ -9,11 +9,10 @@ import ru.practicum.ewm.main.event.dto.EventFullDto;
 import ru.practicum.ewm.main.event.dto.EventShortDto;
 import ru.practicum.ewm.main.event.dto.searchrequest.PublicSearchParamsDto;
 import ru.practicum.ewm.main.event.dto.searchrequest.SearchSortOptionDto;
+import ru.practicum.ewm.main.event.model.RateType;
 import ru.practicum.ewm.main.event.service.EventService;
 import ru.practicum.ewm.main.exception.InvalidParamException;
 import ru.practicum.ewm.statistic.dto.Formats;
-import ru.practicum.ewm.main.event.model.RateType;
-
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.Positive;
