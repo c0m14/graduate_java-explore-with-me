@@ -179,6 +179,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    @Transactional
     public void addRateToEvent(Long userId, Long eventId, RateType rateType) {
         User rater = getUserFromDb(userId);
         Event event = getEventFromDbByIdAndState(eventId, EventState.PUBLISHED);
@@ -189,6 +190,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    @Transactional
     public void deleteRateFromEvent(Long userId, Long eventId, RateType rateType) {
         int rate = defineRate(rateType);
         rateDAO.deleteRate(userId, eventId, rate);
