@@ -44,8 +44,7 @@ public class StatisticServiceController {
         log.info("Start GET/stats with start: {}, end: {}, uris: {}, unique: {}",
                 start, end, uris, unique);
         List<ViewStatsDto> stats = statisticService.getViewStats(start, end, uris, unique);
-        log.info("End GET/stats with start: {}, end: {}, uris: {}, unique: {}",
-                start, end, uris, unique);
+        log.info("Finish GET/stats with {}", stats);
         return stats;
     }
 

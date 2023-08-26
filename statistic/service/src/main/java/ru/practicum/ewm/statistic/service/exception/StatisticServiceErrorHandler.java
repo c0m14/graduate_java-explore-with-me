@@ -62,6 +62,13 @@ public class StatisticServiceErrorHandler {
     }
 
     @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleInvalidParamException(InvalidParamException e) {
+        log.error(e.getMessage(), e);
+        return new ErrorResponse(e.getParamName(), e.getMessage());
+    }
+
+    @ExceptionHandler
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleThrowable(Throwable e) {
         log.error(e.getMessage(), e);
