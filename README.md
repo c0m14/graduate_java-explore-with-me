@@ -1,2 +1,3 @@
 # java-explore-with-me
-Template repository for ExploreWithMe project.
+Ссылка на pull request с финальной фичей:
+https://github.com/c0m14/graduate_java-explore-with-me/pull/3
