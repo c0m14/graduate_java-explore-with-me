@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.ewm.main.user.dto.NewUserRequestDto;
 import ru.practicum.ewm.main.user.dto.UserDto;
 import ru.practicum.ewm.main.user.service.UserService;
+import ru.practicum.ewm.main.validator.OnCreateValidation;
+import ru.practicum.ewm.main.validator.OnUpdateValidation;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Positive;
@@ -23,6 +25,7 @@ public class AdminUserController {
 
     @PostMapping("/admin/users")
     @ResponseStatus(HttpStatus.CREATED)
+    @Validated(OnCreateValidation.class)
     public UserDto addUser(@Valid @RequestBody NewUserRequestDto userRequest) {
         log.info("Start POST /admin/users with {}", userRequest);
         UserDto savedUser = userService.addUser(userRequest);
@@ -31,6 +34,7 @@ public class AdminUserController {
     }
 
     @GetMapping("/admin/users")
+    @Validated(OnUpdateValidation.class)
     public List<UserDto> getUsers(
             @RequestParam(name = "ids", required = false) List<Long> ids,
             @PositiveOrZero @RequestParam(name = "from", required = false, defaultValue = "0") int from,

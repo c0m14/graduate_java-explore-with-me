@@ -14,7 +14,8 @@ import ru.practicum.ewm.main.request.dto.EventRequestStatusUpdateRequestDto;
 import ru.practicum.ewm.main.request.dto.EventRequestStatusUpdateResultDto;
 import ru.practicum.ewm.main.request.dto.ParticipationRequestDto;
 import ru.practicum.ewm.main.request.service.RequestService;
-import ru.practicum.ewm.main.validator.ValidationMarker;
+import ru.practicum.ewm.main.validator.OnCreateValidation;
+import ru.practicum.ewm.main.validator.OnUpdateValidation;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Positive;
@@ -32,7 +33,7 @@ public class PrivateEventController {
 
     @PostMapping("/users/{userId}/events")
     @ResponseStatus(HttpStatus.CREATED)
-    @Validated(ValidationMarker.OnCreate.class)
+    @Validated(OnCreateValidation.class)
     public EventFullDto addEvent(
             @PathVariable("userId") Long userId,
             @Valid @RequestBody NewEventDto newEventDto) {
@@ -64,7 +65,7 @@ public class PrivateEventController {
     }
 
     @PatchMapping("/users/{userId}/events/{eventId}")
-    @Validated(ValidationMarker.OnUpdate.class)
+    @Validated(OnUpdateValidation.class)
     public EventFullDto updateEventByOwner(
             @PathVariable("userId") Long userId,
             @PathVariable("eventId") Long eventId,
