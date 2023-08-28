@@ -1,4 +1,4 @@
-package ru.practicum.ewm.main.event.dto;
+package ru.practicum.ewm.main.event.dto.searchRequest;
 
 import java.util.Optional;
 

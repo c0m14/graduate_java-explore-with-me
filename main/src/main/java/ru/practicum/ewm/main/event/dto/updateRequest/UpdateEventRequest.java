@@ -1,11 +1,10 @@
-package ru.practicum.ewm.main.event.dto;
-
+package ru.practicum.ewm.main.event.dto.updateRequest;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.validator.constraints.Length;
 import ru.practicum.ewm.main.event.model.Location;
 import ru.practicum.ewm.main.validator.NullOrNotBlank;
@@ -13,11 +12,11 @@ import ru.practicum.ewm.main.validator.NullOrNotBlank;
 import javax.validation.constraints.Future;
 import java.time.LocalDateTime;
 
-@Data
-@Builder
-@NoArgsConstructor
+@SuperBuilder
 @AllArgsConstructor
-public class UpdateEventUserRequest {
+@NoArgsConstructor
+@Data
+public abstract class UpdateEventRequest {
     @NullOrNotBlank
     @Length(min = 3, max = 120)
     private String title;
@@ -40,5 +39,4 @@ public class UpdateEventUserRequest {
     private Boolean paid;
     private Location location;
     private Boolean requestModeration;
-    private StateAction stateAction;
 }
