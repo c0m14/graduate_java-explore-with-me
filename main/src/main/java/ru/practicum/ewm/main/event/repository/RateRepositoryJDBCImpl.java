@@ -18,7 +18,7 @@ import java.util.stream.Stream;
 
 @Component
 @RequiredArgsConstructor
-public class RateDAOImpl implements RateDAO {
+public class RateRepositoryJDBCImpl implements RateRepository {
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
     @Override

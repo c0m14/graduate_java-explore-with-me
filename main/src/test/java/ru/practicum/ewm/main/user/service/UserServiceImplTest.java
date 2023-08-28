@@ -11,7 +11,7 @@ import ru.practicum.ewm.main.TestDataProvider;
 import ru.practicum.ewm.main.category.model.Category;
 import ru.practicum.ewm.main.event.model.Event;
 import ru.practicum.ewm.main.event.repository.EventRepository;
-import ru.practicum.ewm.main.event.repository.RateDAO;
+import ru.practicum.ewm.main.event.repository.RateRepository;
 import ru.practicum.ewm.main.user.dto.UserDto;
 import ru.practicum.ewm.main.user.mapper.UserMapper;
 import ru.practicum.ewm.main.user.model.User;
@@ -33,7 +33,7 @@ class UserServiceImplTest {
     @Mock
     private EventRepository eventRepository;
     @Mock
-    private RateDAO rateDAO;
+    private RateRepository rateDAO;
 
     @InjectMocks
     private UserServiceImpl userService;
