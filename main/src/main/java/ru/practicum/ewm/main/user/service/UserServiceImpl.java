@@ -14,6 +14,7 @@ import ru.practicum.ewm.main.user.repository.UserRepository;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Component
@@ -39,6 +40,9 @@ public class UserServiceImpl implements UserService {
     public List<UserDto> getUsers(List<Long> ids, int from, int size) {
 
         List<User> foundUsers = userRepository.findUsers(ids, from, size);
+        if (foundUsers.isEmpty()) {
+            return List.of();
+        }
 
         List<UserDto> userDtos = foundUsers.stream()
                 .map(UserMapper::mapToUserDto)
@@ -75,6 +79,7 @@ public class UserServiceImpl implements UserService {
                     .filter(event -> event.getInitiator().getId().equals(userDto.getId()))
                     .map(Event::getId)
                     .map(eventsRatings::get)
+                    .filter(Objects::nonNull)
                     .reduce(0L, Long::sum);
 
             userDto.setRating(userRating);
