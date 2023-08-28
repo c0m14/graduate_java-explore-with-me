@@ -37,6 +37,7 @@ import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -510,7 +511,7 @@ public class EventServiceImpl implements EventService {
     }
 
     private void checkRater(User rater, Event event) {
-        if (rater.getId() == event.getInitiator().getId()) {
+        if (Objects.equals(rater.getId(), event.getInitiator().getId())) {
             throw new ForbiddenException(
                     "Forbidden",
                     "User can not rate his own event"
