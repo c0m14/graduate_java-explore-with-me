@@ -1,4 +1,4 @@
-package ru.practicum.ewm.main.event.dto.searchrequest;
+package ru.practicum.ewm.main.event.dto.searchRequest;
 
 import lombok.Builder;
 import lombok.Data;
