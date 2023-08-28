@@ -24,7 +24,7 @@ import ru.practicum.ewm.main.event.model.EventState;
 import ru.practicum.ewm.main.event.model.Location;
 import ru.practicum.ewm.main.event.model.RateType;
 import ru.practicum.ewm.main.event.repository.EventRepository;
-import ru.practicum.ewm.main.event.repository.RateDAO;
+import ru.practicum.ewm.main.event.repository.RateRepository;
 import ru.practicum.ewm.main.exception.ForbiddenException;
 import ru.practicum.ewm.main.exception.InvalidParamException;
 import ru.practicum.ewm.main.exception.NotExistsException;
@@ -64,7 +64,7 @@ class EventServiceImplUnitTests {
     @Mock
     private RequestRepository requestRepository;
     @Mock
-    private RateDAO rateDAO;
+    private RateRepository rateDAO;
     @InjectMocks
     private EventServiceImpl eventService;
     @Captor

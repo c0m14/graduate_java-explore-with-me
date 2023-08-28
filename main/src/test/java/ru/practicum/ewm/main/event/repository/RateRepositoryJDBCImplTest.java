@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest
-class RateDAOImplTest {
+class RateRepositoryJDBCImplTest {
     @Autowired
     private UserRepository userRepository;
     @Autowired
@@ -32,7 +32,7 @@ class RateDAOImplTest {
     @Autowired
     private CategoryRepository categoryRepository;
     @Autowired
-    private RateDAO rateDAO;
+    private RateRepository rateDAO;
     @Autowired
     private JdbcTemplate jdbcTemplate;
 

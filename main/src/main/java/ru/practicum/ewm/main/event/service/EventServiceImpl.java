@@ -19,7 +19,7 @@ import ru.practicum.ewm.main.event.model.Event;
 import ru.practicum.ewm.main.event.model.EventState;
 import ru.practicum.ewm.main.event.model.RateType;
 import ru.practicum.ewm.main.event.repository.EventRepository;
-import ru.practicum.ewm.main.event.repository.RateDAO;
+import ru.practicum.ewm.main.event.repository.RateRepository;
 import ru.practicum.ewm.main.exception.ForbiddenException;
 import ru.practicum.ewm.main.exception.InvalidParamException;
 import ru.practicum.ewm.main.exception.NotExistsException;
@@ -49,7 +49,7 @@ public class EventServiceImpl implements EventService {
     private final CategoryRepository categoryRepository;
     private final StatisticClient statisticClient;
     private final RequestRepository requestRepository;
-    private final RateDAO rateDAO;
+    private final RateRepository rateDAO;
 
     @Override
     @Transactional
@@ -175,7 +175,7 @@ public class EventServiceImpl implements EventService {
             return List.of();
         }
 
-        return mapToFullDtoAndFetchViewsAndRating(foundEvents);
+        return mapToFullDtoAndFetchViews(foundEvents);
     }
 
     @Override
@@ -479,17 +479,13 @@ public class EventServiceImpl implements EventService {
     }
 
     private EventFullDto mapToFullDtoAndFetchViewsAndRating(Event event) {
-        Map<Long, Long> eventViews = getEventsViews(List.of(event));
-
-        EventFullDto eventFullDto = EventMapper.mapToFullDto(event);
-
-        setViewsToEventsDtos(List.of(eventFullDto), eventViews);
+        EventFullDto eventFullDto = mapToFullDtoAndFetchViews(List.of(event)).get(0);
         setRatingToEvent(eventFullDto);
 
         return eventFullDto;
     }
 
-    private List<EventFullDto> mapToFullDtoAndFetchViewsAndRating(List<Event> events) {
+    private List<EventFullDto> mapToFullDtoAndFetchViews(List<Event> events) {
         Map<Long, Long> eventsViews = getEventsViews(events);
 
         List<EventFullDto> eventFullDtos = events.stream()
