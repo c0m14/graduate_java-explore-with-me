@@ -7,6 +7,7 @@ import ru.practicum.ewm.main.event.dto.searchrequest.AdminSearchParamsDto;
 import ru.practicum.ewm.main.event.dto.searchrequest.PublicSearchParamsDto;
 import ru.practicum.ewm.main.event.dto.updaterequest.UpdateEventAdminRequestDto;
 import ru.practicum.ewm.main.event.dto.updaterequest.UpdateEventUserRequestDto;
+import ru.practicum.ewm.main.event.model.RateType;
 
 import java.util.List;
 
@@ -27,4 +28,7 @@ public interface EventService {
 
     List<EventFullDto> findEventsAdmin(AdminSearchParamsDto searchParams);
 
+    void addRateToEvent(Long userId, Long eventId, RateType rateType);
+
+    void deleteRateFromEvent(Long userId, Long eventId, RateType rateType);
 }

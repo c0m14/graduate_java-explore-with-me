@@ -27,4 +27,5 @@ public class EventFullDto extends EventShortDto {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime publishedOn;
     private EventState state;
+    private Long rating;
 }

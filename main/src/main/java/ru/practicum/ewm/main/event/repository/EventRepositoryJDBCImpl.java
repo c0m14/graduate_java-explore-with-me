@@ -44,7 +44,7 @@ public class EventRepositoryJDBCImpl implements EventRepository {
     }
 
     @Override
-    public List<Event> findUsersEvents(Long userId, int offset, int size) {
+    public List<Event> findUserEvents(Long userId, int offset, int size) {
         String query = getSelectQueryWithUserCategoryAndRequest() +
                 "WHERE e.initiator_id = :userId " +
                 "GROUP BY e.event_id, e.event_date, c.category_id, u.user_id " +
@@ -251,7 +251,6 @@ public class EventRepositoryJDBCImpl implements EventRepository {
                 "AND r.request_status = :requestStatus " +
                 "WHERE e.event_id = :eventId " +
                 "GROUP BY e.event_id, e.event_date, u.user_id ";
-
         SqlParameterSource namedParams = new MapSqlParameterSource()
                 .addValue("eventId", eventId)
                 .addValue("requestStatus", RequestStatus.CONFIRMED.toString());
@@ -341,7 +340,31 @@ public class EventRepositoryJDBCImpl implements EventRepository {
         return compilationsEvents;
     }
 
+    @Override
+    public List<Event> findUsersEventsWithoutCategoryAndRequest(List<Long> usersIds) {
+        String query = "SELECT e.event_id, e.title, e.annotation, e.description, e.category_id, e.event_date, " +
+                "e.initiator_id, e.paid, e.latitude, e.longitude, e.participant_limit, e.request_moderation, e.created_on, " +
+                "e.published_on, e.state, " +
+                "u.user_id, u.user_name " +
+                "FROM event AS e " +
+                "INNER JOIN users AS u ON e.initiator_id = u.user_id " +
+                "WHERE e.initiator_id IN (:usersIds)";
+        SqlParameterSource namedParams = new MapSqlParameterSource("usersIds", usersIds);
+
+        try {
+            return jdbcTemplate.query(query, namedParams, this::mapRowToEventNoCategoryAndRequest);
+        } catch (EmptyResultDataAccessException e) {
+            return List.of();
+        }
+    }
+
     private Event mapRowToEventNoCategory(ResultSet resultSet, int rowNum) throws SQLException {
+        return getEventBuilderWithBaseFields(resultSet, rowNum)
+                .confirmedRequests(resultSet.getInt("confirmed_requests"))
+                .build();
+    }
+
+    private Event mapRowToEventNoCategoryAndRequest(ResultSet resultSet, int rowNum) throws SQLException {
         return getEventBuilderWithBaseFields(resultSet, rowNum).build();
     }
 
@@ -350,6 +373,7 @@ public class EventRepositoryJDBCImpl implements EventRepository {
                 .category(new Category(
                         resultSet.getInt("category_id"),
                         resultSet.getString("category_name")))
+                .confirmedRequests(resultSet.getInt("confirmed_requests"))
                 .build();
     }
 
@@ -373,8 +397,8 @@ public class EventRepositoryJDBCImpl implements EventRepository {
                 .createdOn(LocalDateTime.parse(resultSet.getString("created_on"), formatter))
                 .publishedOn(resultSet.getString("published_on") == null ?
                         null : LocalDateTime.parse(resultSet.getString("published_on"), formatter))
-                .state(EventState.valueOf(resultSet.getString("state")))
-                .confirmedRequests(resultSet.getInt("confirmed_requests"));
+                .state(EventState.valueOf(resultSet.getString("state")));
+
     }
 
     private boolean hasWhereBlock(AdminSearchParamsDto searchParams) {

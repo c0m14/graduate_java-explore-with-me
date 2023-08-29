@@ -22,10 +22,15 @@ import ru.practicum.ewm.main.event.mapper.EventMapper;
 import ru.practicum.ewm.main.event.model.Event;
 import ru.practicum.ewm.main.event.model.EventState;
 import ru.practicum.ewm.main.event.model.Location;
+import ru.practicum.ewm.main.event.model.RateType;
 import ru.practicum.ewm.main.event.repository.EventRepository;
+import ru.practicum.ewm.main.event.repository.RateRepository;
 import ru.practicum.ewm.main.exception.ForbiddenException;
 import ru.practicum.ewm.main.exception.InvalidParamException;
 import ru.practicum.ewm.main.exception.NotExistsException;
+import ru.practicum.ewm.main.request.model.EventParticipationRequest;
+import ru.practicum.ewm.main.request.model.RequestStatus;
+import ru.practicum.ewm.main.request.repository.RequestRepository;
 import ru.practicum.ewm.main.user.model.User;
 import ru.practicum.ewm.main.user.repository.UserRepository;
 import ru.practicum.ewm.statistic.client.StatisticClient;
@@ -35,6 +40,7 @@ import ru.practicum.ewm.statistic.dto.ViewStatsDto;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -55,6 +61,10 @@ class EventServiceImplUnitTests {
     private CategoryRepository categoryRepository;
     @Mock
     private StatisticClient statisticClient;
+    @Mock
+    private RequestRepository requestRepository;
+    @Mock
+    private RateRepository rateDAO;
     @InjectMocks
     private EventServiceImpl eventService;
     @Captor
@@ -74,7 +84,11 @@ class EventServiceImplUnitTests {
     @Captor
     private ArgumentCaptor<Long> eventIdArgumentCaptor;
     @Captor
+    private ArgumentCaptor<Long> userIdArgumentCaptor;
+    @Captor
     private ArgumentCaptor<EventState> eventStateArgumentCaptor;
+    @Captor
+    private ArgumentCaptor<Integer> rateArgumentCaptor;
 
     @Test
     void addEvent_whenEventDateEarlierThan2HoursFromNow_thenForbiddenExceptionThrown() {
@@ -91,7 +105,7 @@ class EventServiceImplUnitTests {
     }
 
     @Test
-    void addEvent_whenUserNotFound_thenInvalidParamExceptionThrown() {
+    void addEvent_whenUserNotFound_thenNotExistsExceptionThrown() {
         Long userId = 0L;
         NewEventDto newEventDto = TestDataProvider.getValidNewEventDto();
         when(userRepository.findUserById(userId))
@@ -101,7 +115,7 @@ class EventServiceImplUnitTests {
 
         verify(eventRepository, times(0))
                 .save(any());
-        assertThrows(InvalidParamException.class,
+        assertThrows(NotExistsException.class,
                 executable);
     }
 
@@ -197,7 +211,7 @@ class EventServiceImplUnitTests {
         Long userId = 0L;
         when(userRepository.userExists(userId))
                 .thenReturn(true);
-        when(eventRepository.findUsersEvents(userId, from, size))
+        when(eventRepository.findUserEvents(userId, from, size))
                 .thenReturn(List.of());
 
         List<EventShortDto> froundEvents = eventService.findUsersEvents(userId, from, size);
@@ -218,7 +232,7 @@ class EventServiceImplUnitTests {
         event2.setCreatedOn(event2CreatedOn);
         when(userRepository.userExists(userId))
                 .thenReturn(true);
-        when(eventRepository.findUsersEvents(userId, from, size))
+        when(eventRepository.findUserEvents(userId, from, size))
                 .thenReturn(List.of(event1, event2));
 
         try {
@@ -246,7 +260,7 @@ class EventServiceImplUnitTests {
         event2.setCreatedOn(event2CreatedOn);
         when(userRepository.userExists(userId))
                 .thenReturn(true);
-        when(eventRepository.findUsersEvents(userId, from, size))
+        when(eventRepository.findUserEvents(userId, from, size))
                 .thenReturn(List.of(event1, event2));
 
         try {
@@ -277,7 +291,7 @@ class EventServiceImplUnitTests {
         event1.setId(event1Id);
         event2.setCreatedOn(event2CreatedOn);
         event2.setId(event2Id);
-        when(eventRepository.findUsersEvents(userId, from, size))
+        when(eventRepository.findUserEvents(userId, from, size))
                 .thenReturn(List.of(event1, event2));
         when(userRepository.userExists(userId))
                 .thenReturn(true);
@@ -308,7 +322,7 @@ class EventServiceImplUnitTests {
         event2.setCreatedOn(event2CreatedOn);
         when(userRepository.userExists(userId))
                 .thenReturn(true);
-        when(eventRepository.findUsersEvents(userId, from, size))
+        when(eventRepository.findUserEvents(userId, from, size))
                 .thenReturn(List.of(event1, event2));
 
         try {
@@ -350,7 +364,7 @@ class EventServiceImplUnitTests {
                 .build();
         when(userRepository.userExists(userId))
                 .thenReturn(true);
-        when(eventRepository.findUsersEvents(userId, from, size))
+        when(eventRepository.findUserEvents(userId, from, size))
                 .thenReturn(List.of(event1, event2));
         when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
                 .thenReturn(List.of(event2Stat, event1Stat));
@@ -389,7 +403,7 @@ class EventServiceImplUnitTests {
                 .build();
         when(userRepository.userExists(userId))
                 .thenReturn(true);
-        when(eventRepository.findUsersEvents(userId, from, size))
+        when(eventRepository.findUserEvents(userId, from, size))
                 .thenReturn(List.of(event1, event2));
         when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
                 .thenReturn(List.of(event2Stat));
@@ -849,7 +863,7 @@ class EventServiceImplUnitTests {
     }
 
     @Test
-    void findEvents_whenInvoked_thenSearchTextFormatToLowerCase() {
+    void findEventsPublic_whenInvoked_thenSearchTextFormatToLowerCase() {
         String ip = "1.1.1.1";
         String text = "TeXt";
         String expectedText = text.toLowerCase();
@@ -865,7 +879,7 @@ class EventServiceImplUnitTests {
     }
 
     @Test
-    void findEvents_whenInvoked_thenSearchStateEqualsPublished() {
+    void findEventsPublic_whenInvoked_thenSearchStateEqualsPublished() {
         String ip = "1.1.1.1";
         PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder().build();
 
@@ -877,7 +891,7 @@ class EventServiceImplUnitTests {
     }
 
     @Test
-    void findEvents_whenStartRangeIsNullButEndRangeIsNot_thenEndPassedToRepository() {
+    void findEventsPublic_whenStartRangeIsNullButEndRangeIsNot_thenEndPassedToRepository() {
         String ip = "1.1.1.1";
         LocalDateTime endRange = LocalDateTime.now().plusDays(1).withNano(0);
         PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder()
@@ -893,7 +907,7 @@ class EventServiceImplUnitTests {
     }
 
     @Test
-    void findEvents_whenEndRangeIsNullButStartRangeIsNot_thenStarttPassedToRepository() {
+    void findEventsPublic_whenEndRangeIsNullButStartRangeIsNot_thenStartPassedToRepository() {
         String ip = "1.1.1.1";
         LocalDateTime startRange = LocalDateTime.now().plusDays(1).withNano(0);
         PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder()
@@ -909,7 +923,7 @@ class EventServiceImplUnitTests {
     }
 
     @Test
-    void findEvents_whenEndRangeIsNullAndStartRangeIsNull_thenStartEqualsNowToRepository() {
+    void findEventsPublic_whenEndRangeIsNullAndStartRangeIsNull_thenStartEqualsNowToRepository() {
         String ip = "1.1.1.1";
         PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder()
                 .build();
@@ -923,7 +937,7 @@ class EventServiceImplUnitTests {
     }
 
     @Test
-    void findEvents_whenSortOptionIsNull_thenSortByEventDate() {
+    void findEventsPublic_whenSortOptionIsNull_thenSortByEventDate() {
         String ip = "1.1.1.1";
         PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder()
                 .build();
@@ -937,7 +951,7 @@ class EventServiceImplUnitTests {
     }
 
     @Test
-    void findEvents_whenEventFound_thenParamsPassedToStatisticClient() {
+    void findEventsPublic_whenEventFound_thenParamsPassedToStatisticClient() {
         Long eventId = 1L;
         String ip = "1.1.1.1";
         PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder().build();
@@ -964,7 +978,7 @@ class EventServiceImplUnitTests {
     }
 
     @Test
-    void findEvents_whenViewsFound_thenAddedToDto() {
+    void findEventsPublic_whenViewsFound_thenAddedToDto() {
         Long eventId = 1L;
         String ip = "1.1.1.1";
         PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder().build();
@@ -990,7 +1004,30 @@ class EventServiceImplUnitTests {
     }
 
     @Test
-    void findEvents_whenViewsNotFround_thenZeroViewsAddedToDto() {
+    void findEventsPublic_whenRatingFound_thenAddedToDto() {
+        Long eventId = 1L;
+        String ip = "1.1.1.1";
+        PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder().build();
+        Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        foundEvent.setId(eventId);
+        when(eventRepository.findEventsPublic(searchParams))
+                .thenReturn(List.of(foundEvent));
+        when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
+                .thenReturn(List.of());
+        when(rateDAO.getRatingsForEvents(List.of(foundEvent.getId())))
+                .thenReturn(Map.of(foundEvent.getId(), 50L));
+        try (MockedStatic<EventMapper> eventMapperMock = Mockito.mockStatic(EventMapper.class)) {
+            eventMapperMock.when(() -> EventMapper.mapToShortDto(foundEvent))
+                    .thenReturn(TestDataProvider.getValidShortDto(foundEvent.getId()));
+        }
+
+        List<EventShortDto> foundEvents = eventService.findEventsPublic(searchParams, ip);
+
+        assertThat(foundEvents.get(0).getRating(), equalTo(50L));
+    }
+
+    @Test
+    void findEventsPublic_whenViewsNotFround_thenZeroViewsAddedToDto() {
         Long eventId = 1L;
         String ip = "1.1.1.1";
         PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder().build();
@@ -1016,7 +1053,30 @@ class EventServiceImplUnitTests {
     }
 
     @Test
-    void findEvents_whenSortByViewsWithFromAndSize_thenSortedByViewsWithFromAndSizeLimit() {
+    void findEventsPublic_whenRatingNotFound_thenZeroAddedToDto() {
+        Long eventId = 1L;
+        String ip = "1.1.1.1";
+        PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder().build();
+        Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        foundEvent.setId(eventId);
+        when(eventRepository.findEventsPublic(searchParams))
+                .thenReturn(List.of(foundEvent));
+        when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
+                .thenReturn(List.of());
+        when(rateDAO.getRatingsForEvents(List.of(foundEvent.getId())))
+                .thenReturn(Map.of());
+        try (MockedStatic<EventMapper> eventMapperMock = Mockito.mockStatic(EventMapper.class)) {
+            eventMapperMock.when(() -> EventMapper.mapToShortDto(foundEvent))
+                    .thenReturn(TestDataProvider.getValidShortDto(foundEvent.getId()));
+        }
+
+        List<EventShortDto> foundEvents = eventService.findEventsPublic(searchParams, ip);
+
+        assertThat(foundEvents.get(0).getRating(), equalTo(0L));
+    }
+
+    @Test
+    void findEventsPublic_whenSortByViewsWithFromAndSize_thenSortedByViewsWithFromAndSizeLimit() {
         Long event1Id = 1L;
         Long event2Id = 2L;
         Long event3Id = 3L;
@@ -1066,6 +1126,48 @@ class EventServiceImplUnitTests {
 
         assertThat(foundEvents.size(), equalTo(1));
         assertThat(foundEvents.get(0).getViews(), equalTo(10L));
+    }
+
+    @Test
+    void findEventsPublic_whenSortByRatingWithFromAndSize_thenSortedByViewsWithFromAndSizeLimit() {
+        Long event1Id = 1L;
+        Long event2Id = 2L;
+        Long event3Id = 3L;
+        Integer from = 1;
+        Integer size = 1;
+        String ip = "1.1.1.1";
+        PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder()
+                .sortOption(SearchSortOptionDto.RATING)
+                .from(from)
+                .size(size)
+                .build();
+        Event event1 = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        Event event2 = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        Event event3 = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        event1.setId(event1Id);
+        event2.setId(event2Id);
+        event3.setId(event3Id);
+        when(eventRepository.findEventsPublic(searchParams))
+                .thenReturn(List.of(event1, event2, event3));
+        when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
+                .thenReturn(List.of());
+        when(rateDAO.getRatingsForEvents(List.of(event1Id, event2Id, event3Id)))
+                .thenReturn(Map.of(event1Id, 10L,
+                        event2Id, 20L,
+                        event3Id, 30L));
+        try (MockedStatic<EventMapper> eventMapperMock = Mockito.mockStatic(EventMapper.class)) {
+            eventMapperMock.when(() -> EventMapper.mapToShortDto(event1))
+                    .thenReturn(TestDataProvider.getValidShortDto(event1.getId()));
+            eventMapperMock.when(() -> EventMapper.mapToShortDto(event2))
+                    .thenReturn(TestDataProvider.getValidShortDto(event2.getId()));
+            eventMapperMock.when(() -> EventMapper.mapToShortDto(event3))
+                    .thenReturn(TestDataProvider.getValidShortDto(event3.getId()));
+        }
+
+        List<EventShortDto> foundEvents = eventService.findEventsPublic(searchParams, ip);
+
+        assertThat(foundEvents.size(), equalTo(1));
+        assertThat(foundEvents.get(0).getRating(), equalTo(20L));
     }
 
     @Test
@@ -1121,6 +1223,47 @@ class EventServiceImplUnitTests {
     }
 
     @Test
+    void findEventsPublic_whenSortByRatingWithFrom_thenSortedByRatingWithFromAndSizeLimit() {
+        Long event1Id = 1L;
+        Long event2Id = 2L;
+        Long event3Id = 3L;
+        Integer from = 1;
+        String ip = "1.1.1.1";
+        PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder()
+                .sortOption(SearchSortOptionDto.RATING)
+                .from(from)
+                .build();
+        Event event1 = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        Event event2 = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        Event event3 = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        event1.setId(event1Id);
+        event2.setId(event2Id);
+        event3.setId(event3Id);
+        when(eventRepository.findEventsPublic(searchParams))
+                .thenReturn(List.of(event1, event2, event3));
+        when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
+                .thenReturn(List.of());
+        when(rateDAO.getRatingsForEvents(List.of(event1Id, event2Id, event3Id)))
+                .thenReturn(Map.of(event1Id, 10L,
+                        event2Id, 20L,
+                        event3Id, 30L));
+        try (MockedStatic<EventMapper> eventMapperMock = Mockito.mockStatic(EventMapper.class)) {
+            eventMapperMock.when(() -> EventMapper.mapToShortDto(event1))
+                    .thenReturn(TestDataProvider.getValidShortDto(event1.getId()));
+            eventMapperMock.when(() -> EventMapper.mapToShortDto(event2))
+                    .thenReturn(TestDataProvider.getValidShortDto(event2.getId()));
+            eventMapperMock.when(() -> EventMapper.mapToShortDto(event3))
+                    .thenReturn(TestDataProvider.getValidShortDto(event3.getId()));
+        }
+
+        List<EventShortDto> foundEvents = eventService.findEventsPublic(searchParams, ip);
+
+        assertThat(foundEvents.size(), equalTo(2));
+        assertThat(foundEvents.get(0).getRating(), equalTo(20L));
+        assertThat(foundEvents.get(1).getRating(), equalTo(10L));
+    }
+
+    @Test
     void findEvents_whenSortByViewsWithSize_thenSortedByViewsWithSizeLimit() {
         Long event1Id = 1L;
         Long event2Id = 2L;
@@ -1169,6 +1312,46 @@ class EventServiceImplUnitTests {
 
         assertThat(foundEvents.size(), equalTo(1));
         assertThat(foundEvents.get(0).getViews(), equalTo(20L));
+    }
+
+    @Test
+    void findEventsPublic_whenSortByRatingWithSize_thenSortedByRatingWithFromAndSizeLimit() {
+        Long event1Id = 1L;
+        Long event2Id = 2L;
+        Long event3Id = 3L;
+        Integer size = 1;
+        String ip = "1.1.1.1";
+        PublicSearchParamsDto searchParams = PublicSearchParamsDto.builder()
+                .sortOption(SearchSortOptionDto.RATING)
+                .size(size)
+                .build();
+        Event event1 = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        Event event2 = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        Event event3 = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        event1.setId(event1Id);
+        event2.setId(event2Id);
+        event3.setId(event3Id);
+        when(eventRepository.findEventsPublic(searchParams))
+                .thenReturn(List.of(event1, event2, event3));
+        when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
+                .thenReturn(List.of());
+        when(rateDAO.getRatingsForEvents(List.of(event1Id, event2Id, event3Id)))
+                .thenReturn(Map.of(event1Id, 10L,
+                        event2Id, 20L,
+                        event3Id, 30L));
+        try (MockedStatic<EventMapper> eventMapperMock = Mockito.mockStatic(EventMapper.class)) {
+            eventMapperMock.when(() -> EventMapper.mapToShortDto(event1))
+                    .thenReturn(TestDataProvider.getValidShortDto(event1.getId()));
+            eventMapperMock.when(() -> EventMapper.mapToShortDto(event2))
+                    .thenReturn(TestDataProvider.getValidShortDto(event2.getId()));
+            eventMapperMock.when(() -> EventMapper.mapToShortDto(event3))
+                    .thenReturn(TestDataProvider.getValidShortDto(event3.getId()));
+        }
+
+        List<EventShortDto> foundEvents = eventService.findEventsPublic(searchParams, ip);
+
+        assertThat(foundEvents.size(), equalTo(1));
+        assertThat(foundEvents.get(0).getRating(), equalTo(30L));
     }
 
     @Test
@@ -1261,6 +1444,28 @@ class EventServiceImplUnitTests {
     }
 
     @Test
+    void findEventByIdPublic_whenRatingFound_thenAddedToDto() {
+        Long eventId = 1L;
+        String ip = "1.1.1.1";
+        Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        foundEvent.setId(eventId);
+        when(eventRepository.findEventByIdAndState(eventId, EventState.PUBLISHED))
+                .thenReturn(Optional.of(foundEvent));
+        when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
+                .thenReturn(List.of());
+        when(rateDAO.getRatingForEvent(eventId))
+                .thenReturn(50L);
+        try (MockedStatic<EventMapper> eventMapperMock = Mockito.mockStatic(EventMapper.class)) {
+            eventMapperMock.when(() -> EventMapper.mapToFullDto(foundEvent))
+                    .thenReturn(TestDataProvider.getValidFullDto(foundEvent.getId()));
+        }
+
+        EventFullDto foundEventDto = eventService.findEventByIdPublic(eventId, ip);
+
+        assertThat(foundEventDto.getRating(), equalTo(50L));
+    }
+
+    @Test
     void findEventByIdPublic_whenViewsNotFround_thenZeroViewsAddedToDto() {
         Long eventId = 1L;
         String ip = "1.1.1.1";
@@ -1283,6 +1488,28 @@ class EventServiceImplUnitTests {
         EventFullDto foundEventDto = eventService.findEventByIdPublic(eventId, ip);
 
         assertThat(foundEventDto.getViews(), equalTo(0L));
+    }
+
+    @Test
+    void findEventByIdPublic_whenRatingNotFound_thenZeroAddedToDto() {
+        Long eventId = 1L;
+        String ip = "1.1.1.1";
+        Event foundEvent = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        foundEvent.setId(eventId);
+        when(eventRepository.findEventByIdAndState(eventId, EventState.PUBLISHED))
+                .thenReturn(Optional.of(foundEvent));
+        when(statisticClient.getViewStats(any(), any(), anyList(), anyBoolean()))
+                .thenReturn(List.of());
+        when(rateDAO.getRatingForEvent(eventId))
+                .thenReturn(0L);
+        try (MockedStatic<EventMapper> eventMapperMock = Mockito.mockStatic(EventMapper.class)) {
+            eventMapperMock.when(() -> EventMapper.mapToFullDto(foundEvent))
+                    .thenReturn(TestDataProvider.getValidFullDto(foundEvent.getId()));
+        }
+
+        EventFullDto foundEventDto = eventService.findEventByIdPublic(eventId, ip);
+
+        assertThat(foundEventDto.getRating(), equalTo(0L));
     }
 
     @Test
@@ -1702,6 +1929,184 @@ class EventServiceImplUnitTests {
         EventFullDto foundEventDto = eventService.updateEventByAdmin(eventId, updateRequest);
 
         assertThat(foundEventDto.getViews(), equalTo(0L));
+    }
+
+    @Test
+    void addRateToEvent_whenRaterNotFound_thenNotExistsExceptionThrown() {
+        Long userId = 0L;
+        Long eventId = 1L;
+        RateType rateType = RateType.LIKE;
+        when(userRepository.findUserById(userId))
+                .thenReturn(Optional.empty());
+
+        Executable executable = () -> eventService.addRateToEvent(userId, eventId, rateType);
+
+        assertThrows(NotExistsException.class, executable);
+    }
+
+    @Test
+    void addRateToEvent_whenPublishedEventNotFound_thenNotExistsExceptionThrown() {
+        Long userId = 0L;
+        Long eventId = 1L;
+        RateType rateType = RateType.LIKE;
+        EventState eventState = EventState.PUBLISHED;
+        User rater = TestDataProvider.getValidUserToSave();
+        rater.setId(userId);
+        when(userRepository.findUserById(userId))
+                .thenReturn(Optional.of(rater));
+        when(eventRepository.findEventByIdAndState(eventId, eventState))
+                .thenReturn(Optional.empty());
+
+        Executable executable = () -> eventService.addRateToEvent(userId, eventId, rateType);
+
+        assertThrows(NotExistsException.class, executable);
+    }
+
+    @Test
+    void addRateToEvent_whenRaterIsEventInitiator_thenForbiddenExceptionThrown() {
+        Long userId = 0L;
+        Long eventId = 1L;
+        RateType rateType = RateType.LIKE;
+        EventState eventState = EventState.PUBLISHED;
+        User rater = TestDataProvider.getValidUserToSave();
+        rater.setId(userId);
+        Event event = TestDataProvider.getValidNotSavedEvent(rater, new Category());
+        event.setId(eventId);
+        when(userRepository.findUserById(userId))
+                .thenReturn(Optional.of(rater));
+        when(eventRepository.findEventByIdAndState(eventId, eventState))
+                .thenReturn(Optional.of(event));
+
+        Executable executable = () -> eventService.addRateToEvent(userId, eventId, rateType);
+
+        assertThrows(ForbiddenException.class, executable);
+    }
+
+    @Test
+    void addRateToEvent_whenRaterHasNoConfirmedRequestsForEvent_thenForbiddenExceptionThrown() {
+        Long userId = 0L;
+        Long eventId = 1L;
+        RateType rateType = RateType.LIKE;
+        EventState eventState = EventState.PUBLISHED;
+        RequestStatus requestStatus = RequestStatus.CONFIRMED;
+        User rater = TestDataProvider.getValidUserToSave();
+        rater.setId(userId);
+        Event event = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        event.setId(eventId);
+        when(userRepository.findUserById(userId))
+                .thenReturn(Optional.of(rater));
+        when(eventRepository.findEventByIdAndState(eventId, eventState))
+                .thenReturn(Optional.of(event));
+        when(requestRepository.findByUserEventAndStatus(userId, eventId, requestStatus))
+                .thenReturn(Optional.empty());
+
+        Executable executable = () -> eventService.addRateToEvent(userId, eventId, rateType);
+
+        assertThrows(ForbiddenException.class, executable);
+    }
+
+    @Test
+    void addRateToEvent_whenLike_thenRateIsPositive1() {
+        Long userId = 0L;
+        Long eventId = 1L;
+        RateType rateType = RateType.LIKE;
+        EventState eventState = EventState.PUBLISHED;
+        RequestStatus requestStatus = RequestStatus.CONFIRMED;
+        User rater = TestDataProvider.getValidUserToSave();
+        rater.setId(userId);
+        Event event = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        event.setId(eventId);
+        EventParticipationRequest request = TestDataProvider.getValidRequestToSave(rater, event);
+        request.setRequestStatus(requestStatus);
+        when(userRepository.findUserById(userId))
+                .thenReturn(Optional.of(rater));
+        when(eventRepository.findEventByIdAndState(eventId, eventState))
+                .thenReturn(Optional.of(event));
+        when(requestRepository.findByUserEventAndStatus(userId, eventId, requestStatus))
+                .thenReturn(Optional.of(request));
+
+        eventService.addRateToEvent(userId, eventId, rateType);
+
+        verify(rateDAO, times(1))
+                .addRate(
+                        userIdArgumentCaptor.capture(),
+                        eventIdArgumentCaptor.capture(),
+                        rateArgumentCaptor.capture()
+                );
+        assertThat(userIdArgumentCaptor.getValue(), equalTo(userId));
+        assertThat(eventIdArgumentCaptor.getValue(), equalTo(eventId));
+        assertThat(rateArgumentCaptor.getValue(), equalTo(1));
+    }
+
+    @Test
+    void addRateToEvent_whenDislike_thenRateIsNegative1() {
+        Long userId = 0L;
+        Long eventId = 1L;
+        RateType rateType = RateType.DISLIKE;
+        EventState eventState = EventState.PUBLISHED;
+        RequestStatus requestStatus = RequestStatus.CONFIRMED;
+        User rater = TestDataProvider.getValidUserToSave();
+        rater.setId(userId);
+        Event event = TestDataProvider.getValidNotSavedEvent(new User(), new Category());
+        event.setId(eventId);
+        EventParticipationRequest request = TestDataProvider.getValidRequestToSave(rater, event);
+        request.setRequestStatus(requestStatus);
+        when(userRepository.findUserById(userId))
+                .thenReturn(Optional.of(rater));
+        when(eventRepository.findEventByIdAndState(eventId, eventState))
+                .thenReturn(Optional.of(event));
+        when(requestRepository.findByUserEventAndStatus(userId, eventId, requestStatus))
+                .thenReturn(Optional.of(request));
+
+        eventService.addRateToEvent(userId, eventId, rateType);
+
+        verify(rateDAO, times(1))
+                .addRate(
+                        userIdArgumentCaptor.capture(),
+                        eventIdArgumentCaptor.capture(),
+                        rateArgumentCaptor.capture()
+                );
+        assertThat(userIdArgumentCaptor.getValue(), equalTo(userId));
+        assertThat(eventIdArgumentCaptor.getValue(), equalTo(eventId));
+        assertThat(rateArgumentCaptor.getValue(), equalTo(-1));
+    }
+
+    @Test
+    void deleteRateFromEvent_whenLike_thenRateIsPositive1() {
+        Long userId = 0L;
+        Long eventId = 1L;
+        RateType rateType = RateType.LIKE;
+
+        eventService.deleteRateFromEvent(userId, eventId, rateType);
+
+        verify(rateDAO, times(1))
+                .deleteRate(
+                        userIdArgumentCaptor.capture(),
+                        eventIdArgumentCaptor.capture(),
+                        rateArgumentCaptor.capture()
+                );
+        assertThat(userIdArgumentCaptor.getValue(), equalTo(userId));
+        assertThat(eventIdArgumentCaptor.getValue(), equalTo(eventId));
+        assertThat(rateArgumentCaptor.getValue(), equalTo(1));
+    }
+
+    @Test
+    void deleteRateFromEvent_whenDislike_thenRateIsNegative1() {
+        Long userId = 0L;
+        Long eventId = 1L;
+        RateType rateType = RateType.DISLIKE;
+
+        eventService.deleteRateFromEvent(userId, eventId, rateType);
+
+        verify(rateDAO, times(1))
+                .deleteRate(
+                        userIdArgumentCaptor.capture(),
+                        eventIdArgumentCaptor.capture(),
+                        rateArgumentCaptor.capture()
+                );
+        assertThat(userIdArgumentCaptor.getValue(), equalTo(userId));
+        assertThat(eventIdArgumentCaptor.getValue(), equalTo(eventId));
+        assertThat(rateArgumentCaptor.getValue(), equalTo(-1));
     }
 
 }

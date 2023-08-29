@@ -144,6 +144,25 @@ public class RequestRepositoryJDCBImpl implements RequestRepository {
 
     }
 
+    @Override
+    public Optional<EventParticipationRequest> findByUserEventAndStatus(Long userId, Long eventId, RequestStatus status) {
+        String query = "SELECT request_id, created, event_id, requester_id, request_status " +
+                "FROM event_participation_request " +
+                "WHERE event_id = :eventId " +
+                "AND requester_id = :userId " +
+                "AND request_status = :requestStatus";
+        SqlParameterSource namedParams = new MapSqlParameterSource()
+                .addValue("eventId", eventId)
+                .addValue("userId", userId)
+                .addValue("requestStatus", status.toString());
+
+        try {
+            return Optional.of(jdbcTemplate.queryForObject(query, namedParams, this::mapRowToRequestShort));
+        } catch (EmptyResultDataAccessException e) {
+            return Optional.empty();
+        }
+    }
+
     private EventParticipationRequest mapRowToRequestShort(ResultSet resultSet, int rowNum) throws SQLException {
         return getRequestBuilderWithBaseFields(resultSet, rowNum)
                 .event(Event.builder().id(resultSet.getLong("event_id")).build())
