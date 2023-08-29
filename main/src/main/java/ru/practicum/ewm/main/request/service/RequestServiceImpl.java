@@ -139,16 +139,15 @@ public class RequestServiceImpl implements RequestService {
     }
 
     private Event getEventFromDB(Long eventId, boolean withLocking) {
-        Event foundEvent = eventRepository.findEventByIdWithoutCategory(eventId).orElseThrow(
+        if (withLocking) {
+            eventRepository.lockEventForShare(eventId);
+        }
+        return eventRepository.findEventByIdWithoutCategory(eventId).orElseThrow(
                 () -> new NotExistsException(
                         "Event",
                         String.format("Event with id %d not exists", eventId)
                 )
         );
-        if (withLocking) {
-            eventRepository.lockEventForShare(eventId);
-        }
-        return foundEvent;
     }
 
     private EventParticipationRequest getRequestFromDbByIdAndOwner(Long userId, Long requestId) {
