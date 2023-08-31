@@ -25,7 +25,7 @@
 - Database: PosgreSQL + JDBCTemplate
 
 ### swagger:  
-[Main service](./ewm-main-service-spec.json)
+[Main service](./ewm-main-service-spec.json)  
 [Statistic](./ewm-stats-service-spec.json)
 
 ### database schemas:
