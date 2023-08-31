@@ -23,6 +23,7 @@
 - Framework: SpringBoot
 - Client: RestTemplate
 - Database: PosgreSQL + JDBCTemplate
+- Deploy: Docker-compose
 
 ### swagger:  
 [Main service](./ewm-main-service-spec.json)  
