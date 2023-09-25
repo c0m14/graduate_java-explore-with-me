@@ -19,6 +19,11 @@
 - Главный сервис с основной логикой проекта
 У каждого микросервиса своя схема БД.
 
+### my other edu projects
+- [(1) Kanban (Трекер задач а-ля Jira)](https://github.com/c0m14/java-kanban/blob/main/README.md)
+- [(2) Filmorate (Сервис для оценки и рекомендации фильмов)](https://github.com/c0m14/java-filmorate/blob/main/README.md)
+- [(3) ShareIt ("Шэринг-сервис" - вещи в аренду)](https://github.com/c0m14/java-shareit/blob/main/README.md)
+
 ### stack
 - Framework: SpringBoot
 - Client: RestTemplate
