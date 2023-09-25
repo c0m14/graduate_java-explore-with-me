@@ -19,7 +19,7 @@
 - Главный сервис с основной логикой проекта
 У каждого микросервиса своя схема БД.
 
-## stack
+### stack
 - Framework: SpringBoot
 - Client: RestTemplate
 - Database: PosgreSQL + JDBCTemplate
